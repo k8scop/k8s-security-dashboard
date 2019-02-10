@@ -1,0 +1,13 @@
+# VSCode 
+
+alert-system/.vscode/*
+
+# Python
+
+alert-system/__pycache__/*
+alert-system/*.py[cod]
+
+# venv
+
+alert-system/venv/*
+
