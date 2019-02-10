@@ -41,11 +41,6 @@ def init_globals():
     es.indices.delete(index=alerts_index, ignore=[400, 404])
     es.indices.create(index=alerts_index)
 
-    print('Scanning logs at: %s' % page_index)
-    print('From: %s' % start)
-    print('With a delay of: %s' % fetch_delay)
-    print('Alers are bundled with delta: %s' % max_alert_delta)
-
 
 def run_processes(steve_jobs):
     for job in steve_jobs:
