@@ -21,4 +21,4 @@ The Fetcher fetches data from ElasticSearch every `d` seconds and puts each entr
 The Parser gets data from the Fetch Queue, parses each entry and does some magic pattern recognition. 
 If a pattern is matched, the entry is put in the Push Queue.
 The Pusher gets entries from the Push Queue and pushes the corresponding alert(s) back to ElasticSearch every second.
-The Pusher also takes care of alert aggregation: if the same alert has been seen in the last `-D` seconds, the two alerts are aggregated. 
+The Pusher also takes care of alert aggregation: if the same alert has been seen in the last `D` seconds, the two alerts are aggregated. 
