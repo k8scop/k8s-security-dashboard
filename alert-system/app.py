@@ -4,9 +4,10 @@ from fetcher import Fetcher
 from parser import Parser
 from pusher import Pusher
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from elasticsearch import Elasticsearch
 from threading import Thread
+import argparse
 import queue
 
 es = None
@@ -19,7 +20,38 @@ fetch_delay = 0
 max_alert_delta = 0
 
 
-def init_globals():
+def parse_arguments():
+    parser = argparse.ArgumentParser(description='K8sCop Alert System')
+
+    required = parser.add_argument_group('required arguments')
+
+    required.add_argument('--elastic', '-E', dest='es', type=str,
+                          help='ElasticSearch instance ip:port', required=True)
+
+    required.add_argument('--page-index', '-I', dest='page_index', type=str,
+                          help='Index of the log page', required=True)
+
+    required.add_argument('--alerts-index', '-i', dest='alerts_index',
+                          type=str, help='Index of the alerts page',
+                          default='alerts', required=True)
+
+    required.add_argument('--start', '-s', dest='start', type=str,
+                          help='Start date and time yyyy-m-d-h-m-s',
+                          required=True)
+
+    required.add_argument('--fetch-delay', '-d', dest='fetch_delay', type=int,
+                          help='Delay between log fetches in seconds',
+                          required=True)
+
+    required.add_argument('--max-alert-delta', '-D', dest='max_alert_delta',
+                          type=int,
+                          help='Max delta for alert aggregation in seconds',
+                          required=True)
+
+    return parser.parse_args()
+
+
+def init_globals(args):
     global es
     global page_index
     global alerts_index
@@ -27,15 +59,17 @@ def init_globals():
     global fetch_delay
     global max_alert_delta
 
-    es = Elasticsearch([{'host': 'localhost', 'port': 9200}])
+    e = args.es.split(':')
+    es = Elasticsearch([{'host': e[0], 'port': int(e[1])}])
 
-    page_index = 'filebeat-6.5.4-2019.02.09'
-    alerts_index = 'alerts'
+    page_index = args.page_index
+    alerts_index = args.alerts_index
 
-    start = datetime(2019, 2, 9, 0, 0, 0)
+    s = list(map(int, args.start.split('-')))
+    start = datetime(s[0], s[1], s[2], s[3], s[4], s[5])
 
-    fetch_delay = 10
-    max_alert_delta = 600
+    fetch_delay = args.fetch_delay
+    max_alert_delta = args.max_alert_delta
 
     # For Testing Purposes
     es.indices.delete(index=alerts_index, ignore=[400, 404])
@@ -51,23 +85,16 @@ def run_processes(steve_jobs):
         job.join()
 
 
-# ./app.py
-# -E localhost:9200
-# -I filebeat-6.5.4-2019.02.08
-# -i alerts
-# -s 2019-2-9-10-0-0
-# -d 10
-# -m 600
 if __name__ == '__main__':
-    init_globals()
+    args = parse_arguments()
+    init_globals(args)
 
     fetch_queue = queue.Queue()
     push_queue = queue.Queue()
 
     running = True
 
-    # then = datetime.now() - timedelta(seconds=fetch_delay)
-    then = datetime(2019, 2, 9, 18, 0, 0)
+    then = datetime.now() - timedelta(seconds=fetch_delay)
 
     fetcher = Fetcher(es, page_index, fetch_delay, fetch_queue, running)
     parser = Parser(fetch_queue, push_queue, running)

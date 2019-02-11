@@ -16,12 +16,12 @@ class Parser:
                     self.auth_alerts(element)
 
     def auth_alerts(self, element):
-        if 'message' in element['_source']['system']['auth']:
-            message = element['_source']['system']['auth']['message']
+        # if 'message' in element['_source']['system']['auth']:
+        #     message = element['_source']['system']['auth']['message']
 
-            if 'root' in message:
-                title = 'Root activity detected'
-                self.push_queue.put((element, title))
+        #     if 'root' in message:
+        #         title = 'Root activity detected'
+        #         self.push_queue.put((element, title))
 
         if 'sudo' in element['_source']['system']['auth']:
             title = 'Someone sudoed!'

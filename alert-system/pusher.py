@@ -20,9 +20,9 @@ class Pusher:
                 index = element['_id']
                 timestamp = element['_source']['@timestamp']
 
-                gte = self.__get_gte(timestamp)
+                latest_time = self.__get_latest_time(timestamp)
 
-                a = self.__search_alert(title, gte, timestamp)
+                a = self.__search_alert(title, latest_time, timestamp)
 
                 if a is None:
                     self.__push_new_alert(title, index, timestamp)
@@ -31,7 +31,7 @@ class Pusher:
 
                 time.sleep(1)
 
-    def __get_gte(self, timestamp):
+    def __get_latest_time(self, timestamp):
         datetime_t = datetime.strptime(timestamp, '%Y-%m-%dT%H:%M:%S.%fZ')
         return datetime_t - timedelta(seconds=self.max_delta)
 
