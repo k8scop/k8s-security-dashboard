@@ -12,24 +12,36 @@ class Pusher:
         self.push_queue = push_queue
         self.running = running
 
-    def push_alerts(self):
+    def push(self):
+        element, title = self.push_queue.get()
+
+        index = element['_id']
+        timestamp = element['_source']['@timestamp']
+
+        latest_time = self.__get_latest_time(timestamp)
+
+        a = self.__search_alert(title, latest_time, timestamp)
+
+        if a is None:
+            self.__push_new_alert(title, index, timestamp)
+        else:
+            self.__update_alert(a, index, timestamp)
+
+        time.sleep(1)
+
+    def push_alerts_static(self):
+        count = 0
+
+        while self.push_queue.qsize() > 0:
+            self.push()
+            count += 1
+
+        print('[+] Pushed %d alerts' % count)
+
+    def push_alerts_update(self):
         while self.running:
             if self.push_queue.qsize() > 0:
-                element, title = self.push_queue.get()
-
-                index = element['_id']
-                timestamp = element['_source']['@timestamp']
-
-                latest_time = self.__get_latest_time(timestamp)
-
-                a = self.__search_alert(title, latest_time, timestamp)
-
-                if a is None:
-                    self.__push_new_alert(title, index, timestamp)
-                else:
-                    self.__update_alert(a, index, timestamp)
-
-                time.sleep(1)
+                self.push()
 
     def __get_latest_time(self, timestamp):
         datetime_t = datetime.strptime(timestamp, '%Y-%m-%dT%H:%M:%S.%fZ')
@@ -70,7 +82,7 @@ class Pusher:
         self.es.index(index=self.alerts_index, doc_type='doc',
                       body=alert.to_dict())
 
-        print('added %s' % title)
+        print('[++] Added alert for log %s' % index)
 
     def __update_alert(self, a, index, timestamp):
         _id = a['_id']
@@ -79,7 +91,7 @@ class Pusher:
 
         a.update(index, timestamp)
 
-        self.es.update(index=self.alerts_index, doc_type='doc', id=_id, 
+        self.es.update(index=self.alerts_index, doc_type='doc', id=_id,
                        body={'doc': a.to_dict()})
 
-        print('updated %s' % a.title)
+        print('[+=] Updated alert with log %s' % index)

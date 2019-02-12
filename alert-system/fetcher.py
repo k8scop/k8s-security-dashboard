@@ -12,7 +12,7 @@ class Fetcher:
         self.running = running
 
     def fetch(self, gte, lte):
-        print('fetching data between %s and %s...' % (gte, lte))
+        print('[*] Log data between %s and %s' % (gte, lte))
 
         jason = {
             'sort': [{'@timestamp': {'order': 'asc'}}],
@@ -50,4 +50,4 @@ class Fetcher:
 
             count += 1
 
-        print('amount of data fetched: %d' % count)
+        print('[+] Amount of data fetched: %d' % count)

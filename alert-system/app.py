@@ -10,26 +10,31 @@ from threading import Thread
 import argparse
 import queue
 
+analysis = ''
+
 es = None
 
 page_index = ''
 alerts_index = ''
 
 start = None
-fetch_delay = 0
+end = None
+
 max_alert_delta = 0
+fetch_delay = 0
 
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description='K8sCop Alert System')
 
     required = parser.add_argument_group('required arguments')
+    optional = parser.add_argument_group('optional arguments')
 
     required.add_argument('--elastic', '-E', dest='es', type=str,
                           help='ElasticSearch instance ip:port', required=True)
 
     required.add_argument('--page-index', '-I', dest='page_index', type=str,
-                          help='Index of the log page', required=True)
+                          help='Index of the logs page', required=True)
 
     required.add_argument('--alerts-index', '-i', dest='alerts_index',
                           type=str, help='Index of the alerts page',
@@ -39,25 +44,37 @@ def parse_arguments():
                           help='Start date and time yyyy-m-d-h-m-s',
                           required=True)
 
-    required.add_argument('--fetch-delay', '-d', dest='fetch_delay', type=int,
-                          help='Delay between log fetches in seconds',
-                          required=True)
-
     required.add_argument('--max-alert-delta', '-D', dest='max_alert_delta',
                           type=int,
                           help='Max delta for alert aggregation in seconds',
                           required=True)
 
+    required.add_argument('--analysis', '-A', dest='analysis', type=str,
+                          choices=['static', 'streaming'],
+                          help='K8sCop static or streaming analysis',
+                          required=True)
+
+    optional.add_argument('--end', '-e', dest='end', type=str,
+                          help='End date and time yyyy-m-d-h-s')
+
+    optional.add_argument('--fetch-delay', '-d', dest='fetch_delay', type=int,
+                          choices=[8, 9, 10, 11, 12], default=10,
+                          help='Delay between log fetches in seconds')
+
     return parser.parse_args()
 
 
 def init_globals(args):
+    global analysis
     global es
     global page_index
     global alerts_index
     global start
+    global end
     global fetch_delay
     global max_alert_delta
+
+    analysis = args.analysis
 
     e = args.es.split(':')
     es = Elasticsearch([{'host': e[0], 'port': int(e[1])}])
@@ -68,7 +85,13 @@ def init_globals(args):
     s = list(map(int, args.start.split('-')))
     start = datetime(s[0], s[1], s[2], s[3], s[4], s[5])
 
-    fetch_delay = args.fetch_delay
+    if analysis == 'static':
+        e = list(map(int, args.end.split('-')))
+        end = datetime(e[0], e[1], e[2], e[3], e[4], e[5])
+    else:
+        end = datetime.utcnow() - timedelta(seconds=fetch_delay)
+        fetch_delay = args.fetch_delay
+
     max_alert_delta = args.max_alert_delta
 
     # For Testing Purposes
@@ -81,32 +104,55 @@ def run_processes(steve_jobs):
         job.setDaemon(True)
         job.start()
 
+    print('[+] Threads launched')
+
     for job in steve_jobs:
         job.join()
 
 
 if __name__ == '__main__':
     args = parse_arguments()
-    init_globals(args)
-
-    fetch_queue = queue.Queue()
-    push_queue = queue.Queue()
-
-    running = True
-
-    then = datetime.now() - timedelta(seconds=fetch_delay)
-
-    fetcher = Fetcher(es, page_index, fetch_delay, fetch_queue, running)
-    parser = Parser(fetch_queue, push_queue, running)
-    pusher = Pusher(es, alerts_index, max_alert_delta, push_queue, running)
-
-    res = fetcher.fetch(start, then)
-    fetcher.add_to_fetch_queue(res)
 
     try:
-        fetcher_t = Thread(target=fetcher.fetch_update, args=(then,))
-        parser_t = Thread(target=parser.parse)
-        pusher_t = Thread(target=pusher.push_alerts)
-        run_processes([fetcher_t, parser_t, pusher_t])
-    except KeyboardInterrupt:
-        running = False
+        print('[*] Starting %s K8sCop' % args.analysis)
+        init_globals(args)
+        print('[+] Connected to ElasticSearch')
+
+        fetch_queue = queue.Queue()
+        push_queue = queue.Queue()
+
+        running = True
+
+        print('[*] Initialising fetcher, parser, pusher components')
+        fetcher = Fetcher(es, page_index, fetch_delay, fetch_queue, running)
+        parser = Parser(fetch_queue, push_queue, running)
+        pusher = Pusher(es, alerts_index, max_alert_delta, push_queue, running)
+        print('[+] Components initialised')
+
+        print('[*] Fetching initial log bulk')
+        res = fetcher.fetch(start, end)
+        fetcher.add_to_fetch_queue(res)
+        print('[+] Log bulk fetched')
+
+        print('[*] Parsing log bulk and searching for incidents')
+        parser.parse_static()
+        print('[+] Initial log bulk parsed')
+
+        print('[*] Pushing alerts')
+        pusher.push_alerts_static()
+    except:
+        print('[!] Something went terribly wrong')
+        exit(0)
+
+    if analysis == 'streaming':
+        try:
+            print('[*] Making threads')
+            fetcher_t = Thread(target=fetcher.fetch_update, args=(end,))
+            parser_t = Thread(target=parser.parse_update)
+            pusher_t = Thread(target=pusher.push_alerts_update)
+            run_processes([fetcher_t, parser_t, pusher_t])
+        except KeyboardInterrupt:
+            running = False
+            exit(0)
+    else: 
+        print('[+] K8sCop static analysis done')
