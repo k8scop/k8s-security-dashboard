@@ -77,12 +77,12 @@ class Pusher:
         return a
 
     def __push_new_alert(self, title, index, timestamp):
-        alert = Alert(timestamp, title, [index], 1, timestamp)
+        alert = Alert(timestamp, title, index, 1, timestamp)
 
-        self.es.index(index=self.alerts_index, doc_type='doc',
-                      body=alert.to_dict())
+        res = self.es.index(index=self.alerts_index, doc_type='doc',
+                            body=alert.to_dict())
 
-        print('[++] Added alert for log %s' % index)
+        print('[++] Added alert [%s] with _id %s' % (title, res['_id']))
 
     def __update_alert(self, a, index, timestamp):
         _id = a['_id']
@@ -94,4 +94,4 @@ class Pusher:
         self.es.update(index=self.alerts_index, doc_type='doc', id=_id,
                        body={'doc': a.to_dict()})
 
-        print('[+=] Updated alert with log %s' % index)
+        print('[+=] Updated alert with _id %s' % _id)

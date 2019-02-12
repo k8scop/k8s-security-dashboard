@@ -7,7 +7,7 @@ $ ./app.py -h
 usage: app.py [-h] --elastic ip:port --page-index logs --alerts-index
               alerts --start 2019-2-14-12-30-0 --max-alert-delta 600
               --analysis {static,streaming} [--end 2019-2-14-18-30-0]
-              [--fetch-delay {8,9,10,11,12}]
+              [--fetch-delay {5,10,12}]
 ```
 
 - `-E`: the `ip:port` of the ElasticSearch instance
@@ -58,7 +58,7 @@ $ ./app.py -E 192.168.3.139:9200 -I filebeat-6.5.4-2019.02.12 -i alerts -s 2019-
 ## Streaming Analysis
 
 ```
-$ ./app.py -E 192.168.3.139:9200 -I filebeat-6.5.4-2019.02.12 -i alerts -s 2019-2-12-12-0-0 -D 600 --analysis streaming
+$ ./app.py -E 192.168.3.139:9200 -I filebeat-6.5.4-2019.02.12 -i alerts -s 2019-2-12-12-0-0 -D 600 --analysis streaming -d 5
 [*] Starting streaming K8sCop
 [+] Connected to ElasticSearch
 [*] Initialising fetcher, parser, pusher components

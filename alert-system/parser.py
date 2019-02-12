@@ -23,10 +23,10 @@ class Parser:
         if 'message' in element['_source']['system']['auth']:
             message = element['_source']['system']['auth']['message']
 
-            if 'root' in message:
+            if 'ssh' in message:
                 title = 'Root activity detected'
                 self.push_queue.put((element, title))
 
         if 'sudo' in element['_source']['system']['auth']:
-            title = 'Someone sudoed!'
+            title = 'User %s sudoed' % element['_source']['system']['auth']['user']
             self.push_queue.put((element, title))

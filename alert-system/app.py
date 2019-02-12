@@ -58,7 +58,7 @@ def parse_arguments():
                           help='End date and time yyyy-m-d-h-s')
 
     optional.add_argument('--fetch-delay', '-d', dest='fetch_delay', type=int,
-                          choices=[8, 9, 10, 11, 12], default=10,
+                          choices=[5, 10, 12], default=10,
                           help='Delay between log fetches in seconds')
 
     return parser.parse_args()
@@ -140,8 +140,9 @@ if __name__ == '__main__':
 
         print('[*] Pushing alerts')
         pusher.push_alerts_static()
-    except:
+    except Exception as e:
         print('[!] Something went terribly wrong')
+        print('[-] %s' % e)
         exit(0)
 
     if analysis == 'streaming':
@@ -154,5 +155,5 @@ if __name__ == '__main__':
         except KeyboardInterrupt:
             running = False
             exit(0)
-    else: 
+    else:
         print('[+] K8sCop static analysis done')
