@@ -38,7 +38,8 @@ The Pusher also takes care of alert aggregation: if the same alert has been seen
 ## Static Analysis
 
 ```
-$ ./app.py -E 192.168.3.139:9200 -I filebeat-6.5.4-2019.02.12 -i alerts -s 2019-2-12-12-0-0 -D 600 --analysis static -e 2019-2-12-20-0-0
+$ ./app.py -E 192.168.3.139:9200 -I filebeat-6.5.4-2019.02.12 -i alerts -s 2019-2-12-12-0-0 
+           -D 600 --analysis static -e 2019-2-12-20-0-0
 [*] Starting static K8sCop
 [+] Connected to ElasticSearch
 [*] Initialising fetcher, parser, pusher components
@@ -83,7 +84,8 @@ $ ./app.py -E 192.168.3.139:9200 -I filebeat-6.5.4-2019.02.12 -i alerts -s 2019-
 ## Streaming Analysis
 
 ```
-$ ./app.py -E 192.168.3.139:9200 -I filebeat-6.5.4-2019.02.12 -i alerts -s 2019-2-12-12-0-0 -D 600 --analysis streaming -d 5
+$ ./app.py -E 192.168.3.139:9200 -I filebeat-6.5.4-2019.02.12 -i alerts -s 2019-2-12-12-0-0 
+           -D 600 --analysis streaming -d 5
 [*] Starting streaming K8sCop
 [+] Connected to ElasticSearch
 [*] Initialising fetcher, parser, pusher components

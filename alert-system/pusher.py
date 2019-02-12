@@ -1,7 +1,7 @@
-from alert import Alert
-
 from datetime import datetime, timedelta
-import time
+from time import sleep
+
+from alert import Alert
 
 
 class Pusher:
@@ -20,14 +20,14 @@ class Pusher:
 
         latest_time = self.__get_latest_time(timestamp)
 
-        a = self.__search_alert(title, latest_time, timestamp)
+        old_alert = self.__search_alert(title, latest_time, timestamp)
 
-        if a is None:
+        if old_alert is None:
             self.__push_new_alert(title, index, timestamp)
         else:
-            self.__update_alert(a, index, timestamp)
+            self.__update_alert(old_alert, index, timestamp)
 
-        time.sleep(1)
+        sleep(1)
 
     def push_alerts_static(self):
         count = 0
@@ -70,11 +70,11 @@ class Pusher:
 
         res = self.es.search(index=self.alerts_index, body=jason)
 
-        a = None
+        old_alert = None
         for hit in res['hits']['hits']:
-            a = hit
+            old_alert = hit
 
-        return a
+        return old_alert
 
     def __push_new_alert(self, title, index, timestamp):
         alert = Alert(timestamp, title, index, 1, timestamp)
@@ -84,14 +84,14 @@ class Pusher:
 
         print('[++] Added alert [%s] with _id %s' % (title, res['_id']))
 
-    def __update_alert(self, a, index, timestamp):
-        _id = a['_id']
+    def __update_alert(self, old_alert, index, timestamp):
+        _id = old_alert['_id']
 
-        a = Alert.from_dict(a['_source'])
+        alert = Alert.from_dict(old_alert['_source'])
 
-        a.update(index, timestamp)
+        alert.update(index, timestamp)
 
         self.es.update(index=self.alerts_index, doc_type='doc', id=_id,
-                       body={'doc': a.to_dict()})
+                       body={'doc': alert.to_dict()})
 
         print('[+=] Updated alert with _id %s' % _id)

@@ -1,6 +1,6 @@
 from datetime import timedelta
 from elasticsearch.helpers import scan as escan
-import time
+from time import sleep
 
 
 class Fetcher:
@@ -33,7 +33,7 @@ class Fetcher:
 
     def fetch_update(self, then):
         while self.running:
-            time.sleep(self.delay)
+            sleep(self.delay)
 
             new_then = then + timedelta(seconds=self.delay)
 

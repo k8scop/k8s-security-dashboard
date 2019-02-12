@@ -1,14 +1,14 @@
 #!venv/bin/python3
 
-from fetcher import Fetcher
-from parser import Parser
-from pusher import Pusher
-
+from argparse import ArgumentParser
 from datetime import datetime, timedelta
 from elasticsearch import Elasticsearch
 from threading import Thread
-import argparse
-import queue
+from queue import Queue
+
+from fetcher import Fetcher
+from parser import Parser
+from pusher import Pusher
 
 analysis = ''
 
@@ -25,7 +25,7 @@ fetch_delay = 0
 
 
 def parse_arguments():
-    parser = argparse.ArgumentParser(description='K8sCop Alert System')
+    parser = ArgumentParser(description='K8sCop Alert System')
 
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')
@@ -118,8 +118,8 @@ if __name__ == '__main__':
         init_globals(args)
         print('[+] Connected to ElasticSearch')
 
-        fetch_queue = queue.Queue()
-        push_queue = queue.Queue()
+        fetch_queue = Queue()
+        push_queue = Queue()
 
         running = True
 
