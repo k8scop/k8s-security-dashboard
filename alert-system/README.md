@@ -38,20 +38,45 @@ The Pusher also takes care of alert aggregation: if the same alert has been seen
 ## Static Analysis
 
 ```
-$ ./app.py -E 192.168.3.139:9200 -I filebeat-6.5.4-2019.02.12 -i alerts -s 2019-2-12-12-0-0 -D 600 --analysis static -e 2019-2-12-14-0-0
+$ ./app.py -E 192.168.3.139:9200 -I filebeat-6.5.4-2019.02.12 -i alerts -s 2019-2-12-12-0-0 -D 600 --analysis static -e 2019-2-12-20-0-0
 [*] Starting static K8sCop
 [+] Connected to ElasticSearch
 [*] Initialising fetcher, parser, pusher components
 [+] Components initialised
 [*] Fetching initial log bulk
-[*] Log data between 2019-02-12 12:00:00 and 2019-02-12 14:00:00
-[+] Amount of data fetched: 2541
+[*] Log data between 2019-02-12 12:00:00 and 2019-02-12 20:00:00
+[+] Amount of data fetched: 7285
 [+] Log bulk fetched
 [*] Parsing log bulk and searching for incidents
 [+] Initial log bulk parsed
 [*] Pushing alerts
-...
-[+] Pushed 9 alerts
+[++] Added alert [Root activity detected] with _id Lgv64mgBbyGO_r2Qxzsb
+[++] Added alert [User elk sudoed] with _id Lwv64mgBbyGO_r2Qyzsg
+[+=] Updated alert with _id Lwv64mgBbyGO_r2Qyzsg
+[++] Added alert [User elk sudoed] with _id Qgv64mgBbyGO_r2Q0zs3
+[++] Added alert [Root activity detected] with _id Qwv64mgBbyGO_r2Q1zs7
+[+=] Updated alert with _id Qwv64mgBbyGO_r2Q1zs7
+[+=] Updated alert with _id Qwv64mgBbyGO_r2Q1zs7
+[+=] Updated alert with _id Qwv64mgBbyGO_r2Q1zs7
+[++] Added alert [User elk sudoed] with _id jAv64mgBbyGO_r2Q5zs_
+[+=] Updated alert with _id jAv64mgBbyGO_r2Q5zs_
+[+=] Updated alert with _id jAv64mgBbyGO_r2Q5zs_
+[+=] Updated alert with _id jAv64mgBbyGO_r2Q5zs_
+[+=] Updated alert with _id Qwv64mgBbyGO_r2Q1zs7
+[+=] Updated alert with _id Qwv64mgBbyGO_r2Q1zs7
+[+=] Updated alert with _id jAv64mgBbyGO_r2Q5zs_
+[++] Added alert [Root activity detected] with _id 8wv74mgBbyGO_r2QAz5h
+[+=] Updated alert with _id 8wv74mgBbyGO_r2QAz5h
+[++] Added alert [User vincent sudoed] with _id hQv74mgBbyGO_r2QC0Bo
+[++] Added alert [Root activity detected] with _id hgv74mgBbyGO_r2QD0Bs
+[++] Added alert [User elk sudoed] with _id xQv74mgBbyGO_r2QE0Bu
+[+=] Updated alert with _id hgv74mgBbyGO_r2QD0Bs
+[+=] Updated alert with _id hgv74mgBbyGO_r2QD0Bs
+[+=] Updated alert with _id xQv74mgBbyGO_r2QE0Bu
+[+=] Updated alert with _id xQv74mgBbyGO_r2QE0Bu
+[+=] Updated alert with _id hgv74mgBbyGO_r2QD0Bs
+[++] Added alert [User elk sudoed] with _id ygv74mgBbyGO_r2QK0Jw
+[+] Pushed 26 alerts
 [+] K8sCop static analysis done
 ```
 
@@ -64,25 +89,58 @@ $ ./app.py -E 192.168.3.139:9200 -I filebeat-6.5.4-2019.02.12 -i alerts -s 2019-
 [*] Initialising fetcher, parser, pusher components
 [+] Components initialised
 [*] Fetching initial log bulk
-[*] Log data between 2019-02-12 12:00:00 and 2019-02-12 14:17:40.232825
-[+] Amount of data fetched: 2723
+[*] Log data between 2019-02-12 12:00:00 and 2019-02-12 18:30:05.953474
+[+] Amount of data fetched: 7276
 [+] Log bulk fetched
 [*] Parsing log bulk and searching for incidents
 [+] Initial log bulk parsed
 [*] Pushing alerts
-...
-[+] Pushed 18 alerts
+[++] Added alert [Root activity detected] with _id ZAv54mgBbyGO_r2QKRln
+[++] Added alert [User elk sudoed] with _id 0Qv54mgBbyGO_r2QLRlt
+[+=] Updated alert with _id 0Qv54mgBbyGO_r2QLRlt
+[++] Added alert [User elk sudoed] with _id 3Av54mgBbyGO_r2QNRqX
+[++] Added alert [Root activity detected] with _id 3Qv54mgBbyGO_r2QORqZ
+[+=] Updated alert with _id 3Qv54mgBbyGO_r2QORqZ
+[+=] Updated alert with _id 3Qv54mgBbyGO_r2QORqZ
+[+=] Updated alert with _id 3Qv54mgBbyGO_r2QORqZ
+[++] Added alert [User elk sudoed] with _id JQv54mgBbyGO_r2QSRyf
+[+=] Updated alert with _id JQv54mgBbyGO_r2QSRyf
+[+=] Updated alert with _id JQv54mgBbyGO_r2QSRyf
+[+=] Updated alert with _id JQv54mgBbyGO_r2QSRyf
+[+=] Updated alert with _id 3Qv54mgBbyGO_r2QORqZ
+[+=] Updated alert with _id 3Qv54mgBbyGO_r2QORqZ
+[+=] Updated alert with _id JQv54mgBbyGO_r2QSRyf
+[++] Added alert [Root activity detected] with _id ngv54mgBbyGO_r2QZR2r
+[+=] Updated alert with _id ngv54mgBbyGO_r2QZR2r
+[++] Added alert [User vincent sudoed] with _id 4Av54mgBbyGO_r2QbR6y
+[++] Added alert [Root activity detected] with _id 5gv54mgBbyGO_r2QcR65
+[++] Added alert [User elk sudoed] with _id 5wv54mgBbyGO_r2QdR63
+[+=] Updated alert with _id 5gv54mgBbyGO_r2QcR65
+[+=] Updated alert with _id 5gv54mgBbyGO_r2QcR65
+[+=] Updated alert with _id 5wv54mgBbyGO_r2QdR63
+[+=] Updated alert with _id 5wv54mgBbyGO_r2QdR63
+[+=] Updated alert with _id 5gv54mgBbyGO_r2QcR65
+[+] Pushed 25 alerts
 [*] Making threads
 [+] Threads launched
-[*] Log data between 2019-02-12 14:17:40.232825 and 2019-02-12 14:17:50.232825
-[+] Amount of data fetched: 33
-[*] Log data between 2019-02-12 14:17:50.232825 and 2019-02-12 14:18:00.232825
-[+] Amount of data fetched: 23
-[*] Log data between 2019-02-12 14:18:00.232825 and 2019-02-12 14:18:10.232825
-[+] Amount of data fetched: 2
-[*] Log data between 2019-02-12 14:18:10.232825 and 2019-02-12 14:18:20.232825
-[+] Amount of data fetched: 10
-...
+[*] Log data between 2019-02-12 18:30:05.953474 and 2019-02-12 18:30:10.953474
+[+] Amount of data fetched: 0
+[*] Log data between 2019-02-12 18:30:10.953474 and 2019-02-12 18:30:15.953474
+[+] Amount of data fetched: 0
+[*] Log data between 2019-02-12 18:30:15.953474 and 2019-02-12 18:30:20.953474
+[+] Amount of data fetched: 0
+[*] Log data between 2019-02-12 18:30:20.953474 and 2019-02-12 18:30:25.953474
+[+] Amount of data fetched: 1
+[*] Log data between 2019-02-12 18:30:25.953474 and 2019-02-12 18:30:30.953474
+[+] Amount of data fetched: 8
+[++] Added alert [User elk sudoed] with _id hwv54mgBbyGO_r2Q9CnD
+[*] Log data between 2019-02-12 18:30:30.953474 and 2019-02-12 18:30:35.953474
+[+] Amount of data fetched: 0
+[*] Log data between 2019-02-12 18:30:35.953474 and 2019-02-12 18:30:40.953474
+[+] Amount of data fetched: 0
+[*] Log data between 2019-02-12 18:30:40.953474 and 2019-02-12 18:30:45.953474
+[+] Amount of data fetched: 0
+^C%
 ```
 
 ## Important
