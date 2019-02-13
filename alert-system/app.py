@@ -9,6 +9,7 @@ from queue import Queue
 from fetcher import Fetcher
 from parser import Parser
 from pusher import Pusher
+from tracker import Tracker
 
 analysis = ''
 
@@ -55,7 +56,8 @@ def parse_arguments():
                           required=True)
 
     optional.add_argument('--end', '-e', dest='end', type=str,
-                          help='End date and time yyyy-m-d-h-s')
+                          default='now',
+                          help='End date and time yyyy-m-d-h-s or now')
 
     optional.add_argument('--fetch-delay', '-d', dest='fetch_delay', type=int,
                           choices=[5, 10, 12], default=10,
@@ -76,8 +78,8 @@ def init_globals(args):
 
     analysis = args.analysis
 
-    e = args.es.split(':')
-    es = Elasticsearch([{'host': e[0], 'port': int(e[1])}])
+    es_string = args.es.split(':')
+    es = Elasticsearch([{'host': es_string[0], 'port': int(es_string[1])}])
 
     page_index = args.page_index
     alerts_index = args.alerts_index
@@ -86,8 +88,12 @@ def init_globals(args):
     start = datetime(s[0], s[1], s[2], s[3], s[4], s[5])
 
     if analysis == 'static':
-        e = list(map(int, args.end.split('-')))
-        end = datetime(e[0], e[1], e[2], e[3], e[4], e[5])
+        e_string = args.end
+        if e_string == 'now':
+            end = datetime.utcnow()
+        else:
+            e = list(map(int, e_string.split('-')))
+            end = datetime(e[0], e[1], e[2], e[3], e[4], e[5])
     else:
         end = datetime.utcnow() - timedelta(seconds=fetch_delay)
         fetch_delay = args.fetch_delay
@@ -96,15 +102,13 @@ def init_globals(args):
 
     # For Testing Purposes
     es.indices.delete(index=alerts_index, ignore=[400, 404])
-    es.indices.create(index=alerts_index)
+    es.indices.create(index=alerts_index, ignore=[400, 404])
 
 
 def run_processes(steve_jobs):
     for job in steve_jobs:
         job.setDaemon(True)
         job.start()
-
-    print('[+] Threads launched')
 
     for job in steve_jobs:
         job.join()
@@ -113,47 +117,43 @@ def run_processes(steve_jobs):
 if __name__ == '__main__':
     args = parse_arguments()
 
+    is_static = args.analysis == 'static'
+    tracker = Tracker(is_static, False, False, False)
+
     try:
-        print('[*] Starting %s K8sCop' % args.analysis)
+        print('[*] Starting K8sCop in %s mode' % args.analysis)
         init_globals(args)
         print('[+] Connected to ElasticSearch')
 
         fetch_queue = Queue()
         push_queue = Queue()
 
-        running = True
-
         print('[*] Initialising fetcher, parser, pusher components')
-        fetcher = Fetcher(es, page_index, fetch_delay, fetch_queue, running)
-        parser = Parser(fetch_queue, push_queue, running)
-        pusher = Pusher(es, alerts_index, max_alert_delta, push_queue, running)
+        fetcher = Fetcher(es, page_index, fetch_delay,
+                          fetch_queue, tracker)
+
+        parser = Parser(fetch_queue, push_queue, tracker)
+
+        pusher = Pusher(es, alerts_index, max_alert_delta,
+                        push_queue, tracker)
         print('[+] Components initialised')
-
-        print('[*] Fetching initial log bulk')
-        res = fetcher.fetch(start, end)
-        fetcher.add_to_fetch_queue(res)
-        print('[+] Log bulk fetched')
-
-        print('[*] Parsing log bulk and searching for incidents')
-        parser.parse_static()
-        print('[+] Initial log bulk parsed')
-
-        print('[*] Pushing alerts')
-        pusher.push_alerts_static()
     except Exception as e:
         print('[!] Something went terribly wrong')
         print('[-] %s' % e)
         exit(0)
 
-    if analysis == 'streaming':
-        try:
-            print('[*] Making threads')
-            fetcher_t = Thread(target=fetcher.fetch_update, args=(end,))
-            parser_t = Thread(target=parser.parse_update)
-            pusher_t = Thread(target=pusher.push_alerts_update)
-            run_processes([fetcher_t, parser_t, pusher_t])
-        except KeyboardInterrupt:
-            running = False
-            exit(0)
+    parser_t = Thread(target=parser.parse)
+
+    pusher_t = Thread(target=pusher.push)
+
+    if is_static:
+        fetcher_t = Thread(target=fetcher.fetch, args=(start, end))
     else:
-        print('[+] K8sCop static analysis done')
+        fetcher_t = Thread(target=fetcher.fetch_streaming, args=(start, end))
+
+    try:
+        print('[*] Launching threads')
+        run_processes([fetcher_t, parser_t, pusher_t])
+        print('[+] K8sCop is done')
+    except KeyboardInterrupt:
+        print('[!] K8sCop force quit')

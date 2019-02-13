@@ -4,12 +4,12 @@ from time import sleep
 
 
 class Fetcher:
-    def __init__(self, es, page_index, delay, fetch_queue, running):
+    def __init__(self, es, page_index, delay, fetch_queue, tracker):
         self.es = es
         self.page_index = page_index
         self.delay = delay
         self.fetch_queue = fetch_queue
-        self.running = running
+        self.tracker = tracker
 
     def fetch(self, gte, lte):
         print('[*] Log data between %s and %s' % (gte, lte))
@@ -26,28 +26,30 @@ class Fetcher:
             }
         }
 
-        res = escan(self.es, index=self.page_index, doc_type='doc',
+        res = escan(self.es, index=self.page_index, doc_type='fluentd',
                     preserve_order=True, query=jason)
+        self.__add_to_fetch_queue(res)
 
-        return res
-
-    def fetch_update(self, then):
-        while self.running:
+    def fetch_streaming(self, start, end):
+        while True:
             sleep(self.delay)
 
-            new_then = then + timedelta(seconds=self.delay)
+            self.fetch(start, end)
 
-            res = self.fetch(then, new_then)
-            self.add_to_fetch_queue(res)
+            start = end
+            end = end + timedelta(seconds=self.delay)
 
-            then = new_then
-
-    def add_to_fetch_queue(self, res):
+    def __add_to_fetch_queue(self, res):
         count = 0
 
         for hit in res:
             self.fetch_queue.put(hit)
 
             count += 1
+
+        if self.tracker.tracking:
+            self.tracker.fetcher_done = True
+            print('[+] Fetcher is done')
+            return
 
         print('[+] Amount of data fetched: %d' % count)
