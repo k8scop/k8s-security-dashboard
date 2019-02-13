@@ -9,6 +9,7 @@
             * [Ulimit](#ulimit)
             * [Kernel parameter optimization](#kernel-parameter-optimization)
         * [Installation](#installation-1)
+* [Mapping kubectl commands API endpoints](#mapping-kubectl-commands-api-endpoints)
 
 <!-- vim-markdown-toc -->
 
@@ -74,4 +75,14 @@ $ curl -L https://toolbelt.treasuredata.com/sh/install-ubuntu-bionic-td-agent3.s
 
 You might need to add the key for the repository. This can be done using `gpg --recv-keys [key]`.
 
+## Mapping kubectl commands API endpoints
 
+|API|kubectl|comment|
+|---|-------|-------|
+|/api/v1/pods|get pods --all-namespaces||
+|/api/v1/namespaces/kube-system/pods|get pods --namespace kube-system||
+|/api/v1/namespaces/default/pods/busybox-test|describe busybox-test --namespace default||
+|/api/v1/namespaces/default/pods/unsafe-space|describe pods unsafe-space --namespace default||
+|/api/v1/pods?includeUninitialized=true|describe pods --all-namespaces||
+|/api/v1/namespaces/default/secrets?includeUninitialized=true| Followed by multiple token queries|
+|/api/v1/namespaces/default/pods|create -f <pod>| Method create|
