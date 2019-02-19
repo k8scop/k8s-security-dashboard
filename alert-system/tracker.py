@@ -4,3 +4,6 @@ class Tracker:
         self.fetcher_done = fetcher_done
         self.parser_done = parser_done
         self.pusher_done = pusher_done
+
+    def set_tracking(self):
+        self.tracking = True

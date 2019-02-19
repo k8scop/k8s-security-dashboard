@@ -1,11 +1,12 @@
+from datetime import datetime, timedelta
+
+
 # timestamp: the timestamp of the alert
 # title: the title of the alert
 # indices: the list of entry indices related to the alert
 # count: the number of times the alert was triggered
 # last_seen: the timestamp of the last time the alert was triggered
 # query: the search query, None if first time alert is triggered
-
-
 class Alert:
 
     def __init__(self, timestamp, title, index, count, last_seen, specs):
@@ -21,6 +22,14 @@ class Alert:
         self.__update_count()
         self.__update_last_seen(new_alert.timestamp)
         self.__update_specs(new_alert.specs)
+
+    def get_max_delta(self, max_delta):
+        datetime_t = self.get_timestamp_in_dt()
+        return datetime_t - timedelta(seconds=max_delta)
+
+    def get_timestamp_in_dt(self):
+        timestamp = self.timestamp.split('.')[0]
+        return datetime.strptime(timestamp, '%Y-%m-%dT%H:%M:%S')
 
     def to_dict(self):
         data = {

@@ -15,14 +15,16 @@ analysis = ''
 
 es = None
 
-page_index = ''
-alerts_index = ''
+pages = ''
+alerts = ''
 
 start = None
 end = None
 
 max_alert_delta = 0
 fetch_delay = 0
+
+tracker = Tracker(False, False, False, False)
 
 
 def parse_arguments():
@@ -34,12 +36,12 @@ def parse_arguments():
     required.add_argument('--elastic', '-E', dest='es', type=str,
                           help='ElasticSearch instance ip:port', required=True)
 
-    required.add_argument('--page-index', '-I', dest='page_index', type=str,
-                          help='Index of the logs page', required=True)
+    required.add_argument('--pages', '-I', dest='pages', type=str,
+                          help='Name of the logs pages', required=True)
 
-    required.add_argument('--alerts-index', '-i', dest='alerts_index',
-                          type=str, help='Index of the alerts page',
-                          default='alerts', required=True)
+    required.add_argument('--alerts', '-i', dest='alerts', type=str,
+                          help='Name of the alerts pages', default='alerts',
+                          required=True)
 
     required.add_argument('--start', '-s', dest='start', type=str,
                           help='Start date and time yyyy-m-d-h-m-s',
@@ -69,25 +71,28 @@ def parse_arguments():
 def init_globals(args):
     global analysis
     global es
-    global page_index
-    global alerts_index
+    global pages
+    global alerts
     global start
     global end
-    global fetch_delay
     global max_alert_delta
+    global fetch_delay
+    global tracker
 
     analysis = args.analysis
 
     es_string = args.es.split(':')
     es = Elasticsearch([{'host': es_string[0], 'port': int(es_string[1])}])
 
-    page_index = args.page_index
-    alerts_index = args.alerts_index
+    pages = args.pages
+    alerts = args.alerts
 
     s = list(map(int, args.start.split('-')))
     start = datetime(s[0], s[1], s[2], s[3], s[4], s[5])
 
     if analysis == 'static':
+        tracker.set_tracking()
+
         e_string = args.end
         if e_string == 'now':
             end = datetime.utcnow()
@@ -99,10 +104,6 @@ def init_globals(args):
         fetch_delay = args.fetch_delay
 
     max_alert_delta = args.max_alert_delta
-
-    # For Testing Purposes
-    es.indices.delete(index=alerts_index, ignore=[400, 404])
-    es.indices.create(index=alerts_index, ignore=[400, 404])
 
 
 def run_processes(steve_jobs):
@@ -116,26 +117,19 @@ def run_processes(steve_jobs):
 
 if __name__ == '__main__':
     args = parse_arguments()
+    init_globals(args)
 
-    is_static = args.analysis == 'static'
-    tracker = Tracker(is_static, False, False, False)
+    print('[*] Starting K8sCop in %s mode' % analysis)
+    print('[+] Connected to ElasticSearch')
 
     try:
-        print('[*] Starting K8sCop in %s mode' % args.analysis)
-        init_globals(args)
-        print('[+] Connected to ElasticSearch')
-
         fetch_queue = Queue()
         push_queue = Queue()
 
         print('[*] Initialising fetcher, parser, pusher components')
-        fetcher = Fetcher(es, page_index, fetch_delay,
-                          fetch_queue, tracker)
-
+        fetcher = Fetcher(es, pages, fetch_delay, fetch_queue, tracker)
         parser = Parser(fetch_queue, push_queue, tracker)
-
-        pusher = Pusher(es, alerts_index, max_alert_delta,
-                        push_queue, tracker)
+        pusher = Pusher(es, alerts, max_alert_delta, push_queue, tracker)
         print('[+] Components initialised')
     except Exception as e:
         print('[!] Something went terribly wrong')
@@ -143,17 +137,12 @@ if __name__ == '__main__':
         exit(0)
 
     parser_t = Thread(target=parser.parse)
-
     pusher_t = Thread(target=pusher.push)
-
-    if is_static:
-        fetcher_t = Thread(target=fetcher.fetch, args=(start, end))
-    else:
-        fetcher_t = Thread(target=fetcher.fetch_streaming, args=(start, end))
+    fetcher_t = Thread(target=fetcher.fetch, args=(start, end))
 
     try:
         print('[*] Launching threads')
         run_processes([fetcher_t, parser_t, pusher_t])
-        print('[+] K8sCop is done')
+        print('[x] K8sCop is done')
     except KeyboardInterrupt:
         print('[!] K8sCop force quit')

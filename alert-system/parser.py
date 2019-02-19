@@ -16,7 +16,7 @@ class Parser:
                 if self.tracker.tracking:
                     if self.tracker.fetcher_done:
                         self.tracker.parser_done = True
-                        print('[+] Parser is done')
+                        print('[x] Parser is done')
                         return
 
     def __parse_log(self):
@@ -42,9 +42,33 @@ class Parser:
 
                 self.push_queue.put(alert)
 
+        # For Testing Purposes
+        if 'system' in source:
+            if 'syslog' in source['system']:
+                if 'message' in source['system']['syslog']:
+                    if 'DHCPREQUEST' in source['system']['syslog']['message']:
+                        title = 'DHCP stoof'
+                        specs = source['system']['syslog']['message']
+                        alert = Alert(timestamp, title, index, 1, timestamp, 
+                                      specs)
+                        self.push_queue.put(alert)
+            if 'auth' in source['system']:
+                if 'program' in source['system']['auth'] and 'message' in source['system']['auth']:
+                    if source['system']['auth']['program'] == 'sudo':
+                        if 'opened' in source['system']['auth']['message']:
+                            title = 'Someone sudoed!'
+                            specs = source['system']['auth']['message']
+                            alert = Alert(timestamp, title, index, 1,
+                                          timestamp, specs)
+                            self.push_queue.put(alert)
+
     def __parse_command(self, uri):
         tokens = uri.split('command=')
-        more_tokens = tokens[1].split('&')
-        command = more_tokens[0]
 
-        return unquote(command).replace('+', ' ')
+        if len(tokens) > 1:
+            more_tokens = tokens[1].split('&')
+            command = more_tokens[0]
+
+            return unquote(command).replace('+', ' ')
+        else:
+            return ''
