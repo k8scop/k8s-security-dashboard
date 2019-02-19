@@ -40,7 +40,7 @@ class Pusher:
 
         self.__push_or_update(index, timestamp_d, old_alert_dict, alert)
 
-        sleep(0.33)
+        sleep(0.20)
 
     def __search_alert(self, alerts, title, gte, lte):
         jason = {

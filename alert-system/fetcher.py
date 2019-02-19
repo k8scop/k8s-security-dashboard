@@ -84,42 +84,19 @@ class Fetcher:
         jason = {
             'sort': [{'@timestamp': {'order': 'asc'}}],
             'query': {
-                'range': {
-                    '@timestamp': {
-                        'gte': gte,
-                        'lte': lte
-                    }
-                }
-            }
-        }
-
-        # jason = {
-        #     'sort': [{'@timestamp': {'order': 'asc'}}],
-        #     'query': {
-        #         'bool': {
-        #             'must': {
-        #                 'term': {
-        #                     'tag.keyword': 'kube-apiserver-audit'
-        #                 }
-        #             },
-        #             'filter': {
-        #                 'range': {
-        #                     '@timestamp': {
-        #                         'gte': gte,
-        #                         'lte': lte
-        #                     }
-        #                 }
-        #             }
-        #         }
-        #     }
-        # }
-
-        jason = {
-            "query": {
-                "match": {
-                    "tag.keyword": {
-                        "query": "kube-apiserver-audit",
-                        "type": "phrase"
+                'bool': {
+                    'must': {
+                        'match': {
+                            'tag': 'audit'
+                        }
+                    },
+                    'filter': {
+                        'range': {
+                            '@timestamp': {
+                                'gte': gte,
+                                'lte': lte
+                            }
+                        }
                     }
                 }
             }
@@ -127,7 +104,9 @@ class Fetcher:
 
         res = escan(self.es, index=page_index, doc_type='fluentd',
                     preserve_order=True, query=jason)
-        self.__add_to_fetch_queue(res)
+        count = self.__add_to_fetch_queue(res)
+
+        print('[+] Amount of data fetched: %d' % count)
 
     def __add_to_fetch_queue(self, res):
         count = 0
@@ -137,4 +116,4 @@ class Fetcher:
 
             count += 1
 
-        print('[+] Amount of data fetched: %d' % count)
+        return count
