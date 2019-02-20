@@ -24,10 +24,10 @@ class Fetcher:
         gte_d = gte.date()
         lte_d = lte.date()
 
-        if gte_d == lte_d:
-            self.__fetch_single_day(gte, gte_d, lte)
+        if gte.date() == lte.date():
+            self.__fetch_single_day(gte, lte)
         else:
-            self.__fetch_first_day(gte, gte_d)
+            self.__fetch_first_day(gte)
 
             cursor_d = gte_d + timedelta(days=1)
 
@@ -36,26 +36,24 @@ class Fetcher:
 
                 cursor_d = cursor_d + timedelta(days=1)
 
-            self.__fetch_last_day(lte, lte_d)
+            self.__fetch_last_day(lte)
 
         if self.tracker.tracking:
             self.tracker.fetcher_done = True
             print('[x] Fetcher is done')
             return
 
-    def __fetch_single_day(self, gte, gte_d, lte):
-        index = '%s-%d.%02d.%02d' % (self.pages, gte_d.year, gte_d.month,
-                                     gte_d.day)
+    def __fetch_single_day(self, gte, lte):
+        index = '%s-%d.%02d.%02d' % (self.pages, gte.year, gte.month, gte.day)
 
         if self.es.indices.exists(index=index):
             self.__fetch_logs(index, gte, lte)
 
-    def __fetch_first_day(self, gte, gte_d):
-        index = '%s-%d.%02d.%02d' % (self.pages, gte_d.year, gte_d.month,
-                                     gte_d.day)
+    def __fetch_first_day(self, gte):
+        index = '%s-%d.%02d.%02d' % (self.pages, gte.year, gte.month, gte.day)
 
         if self.es.indices.exists(index=index):
-            temp_lte = datetime(gte_d.year, gte_d.month, gte_d.day, 23, 59, 59)
+            temp_lte = datetime(gte.year, gte.month, gte.day, 23, 59, 59)
             self.__fetch_logs(index, gte, temp_lte)
 
     def __fetch_all_day(self, cursor_d):
@@ -70,12 +68,11 @@ class Fetcher:
 
             self.__fetch_logs(index, temp_gte, temp_lte)
 
-    def __fetch_last_day(self, lte, lte_d):
-        index = '%s-%d.%02d.%02d' % (self.pages, lte_d.year, lte_d.month,
-                                     lte_d.day)
+    def __fetch_last_day(self, lte):
+        index = '%s-%d.%02d.%02d' % (self.pages, lte.year, lte.month, lte.day)
 
         if self.es.indices.exists(index=index):
-            temp_gte = datetime(lte_d.year, lte_d.month, lte_d.day, 0, 0, 0)
+            temp_gte = datetime(lte.year, lte.month, lte.day, 0, 0, 0)
             self.__fetch_logs(index, temp_gte, lte)
 
     def __fetch_logs(self, page_index, gte, lte):

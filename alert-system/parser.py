@@ -1,5 +1,7 @@
+from re import search as regsearch
 from urllib.parse import unquote
-from alert import Alert
+
+from alert import RCEAlert, EnumAlert
 
 
 class Parser:
@@ -26,49 +28,108 @@ class Parser:
 
     def __find_alerts(self, element):
         source = element['_source']
-
-        timestamp = source['@timestamp']
         index = element['_id']
 
-        if 'uri' in source:
-            uri = source['uri']
-            if 'exec' in uri:
-                tag = source['tag'].replace('-audit', '')
-                title = 'Command execution by %s on %s' % (source['user'], tag)
+        timestamp = source['@timestamp']
+        user = source['user']
+        uri = source['uri']
 
-                specs = self.__parse_command(uri)
+        if 'pods' in uri:
+            self.__enum_alerts(index, timestamp, user, uri)
 
-                alert = Alert(timestamp, title, index, 1, timestamp, specs)
+        if 'exec?' in uri:
+            self.__rce_alerts(index, timestamp, user, uri)
 
-                self.push_queue.put(alert)
+    def __find_namespace(self, uri):
+        hit = regsearch('namespaces/[A-Za-z0-9_-]+', uri)
 
-        # For Testing Purposes
-        if 'system' in source:
-            if 'syslog' in source['system']:
-                if 'message' in source['system']['syslog']:
-                    if 'DHCPREQUEST' in source['system']['syslog']['message']:
-                        title = 'DHCP stoof'
-                        specs = source['system']['syslog']['message']
-                        alert = Alert(timestamp, title, index, 1, timestamp, 
-                                      specs)
-                        self.push_queue.put(alert)
-            if 'auth' in source['system']:
-                if 'program' in source['system']['auth'] and 'message' in source['system']['auth']:
-                    if source['system']['auth']['program'] == 'sudo':
-                        if 'opened' in source['system']['auth']['message']:
-                            title = 'Someone sudoed!'
-                            specs = source['system']['auth']['message']
-                            alert = Alert(timestamp, title, index, 1,
-                                          timestamp, specs)
-                            self.push_queue.put(alert)
+        if hit:
+            substring = hit.group(0)
+            tokens = substring.split('/')
+            return tokens[1]
+        else:
+            return -1
+
+    def __find_pod(self, uri):
+        hit = regsearch('pods/[A-Za-z0-9_-]+', uri)
+
+        if hit:
+            substring = hit.group(0)
+            tokens = substring.split('/')
+            return tokens[1]
+        else:
+            return -1
+
+    def __find_container(self, uri):
+        hit = regsearch('container=[A-Za-z0-9_-]+', uri)
+
+        if hit:
+            substring = hit.group(0)
+            tokens = substring.split('=')
+            return tokens[1]
+        else:
+            return -1
+
+    def __enum_alerts(self, index, timestamp, user, uri):
+        description = {}
+        description['title'] = 'Pod enumeration detected'
+        description['user'] = user
+
+        regex = '/api/v[0-9]+/pods'
+
+        if regsearch('%s%s' % (regex, '?'), uri):
+            kubectl_command = 'describe pods --all-namespaces'
+
+            alert = EnumAlert(timestamp, description, index, 1, timestamp,
+                              kubectl_command)
+
+        elif regsearch(regex, uri):
+            kubectl_command = 'get all-namespaces'
+
+            alert = EnumAlert(timestamp, description, index, 1, timestamp,
+                              kubectl_command)
+
+        else:
+            namespace = self.__find_namespace(uri)
+            pods = self.__find_pod(uri)
+
+            if pods is -1:
+                kubectl_command = 'get pods --namespace %s' % namespace
+            else:
+                kubectl_command = 'describe [pods] %s --namespace %s' % (pods, namespace)
+
+        alert = EnumAlert(timestamp, description, index, 1, timestamp,
+                          kubectl_command)
+
+        self.push_queue.put(alert)
+
+    def __rce_alerts(self, index, timestamp, user, uri):
+        description = {}
+
+        description['title'] = 'Command execution detected'
+        description['user'] = user
+        description['namespace'] = self.__find_namespace(uri)
+        description['pod'] = self.__find_pod(uri)
+        description['container'] = self.__find_container(uri)
+
+        command = self.__parse_command(uri)
+
+        alert = RCEAlert(timestamp, description, index, 1, timestamp, command)
+
+        self.push_queue.put(alert)
 
     def __parse_command(self, uri):
-        tokens = uri.split('command=')
+        command = ''
 
-        if len(tokens) > 1:
-            more_tokens = tokens[1].split('&')
-            command = more_tokens[0]
+        from_index = uri.find('exec?')
+        to_index = uri.find('&container')
 
-            return unquote(command).replace('+', ' ')
-        else:
-            return ''
+        if from_index > -1 and to_index > -1:
+            substring = uri[from_index:to_index]
+            tokens = substring.split('command=')
+
+            for i in range(1, len(tokens)):
+                token = tokens[i]
+                command = '%s %s' % (command, token)
+
+        return unquote(command).replace('&', '').replace('+', ' ')

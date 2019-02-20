@@ -25,30 +25,28 @@ class Pusher:
     def __push_alert(self):
         alert = self.push_queue.get()
 
+        timestamp = alert.get_timestamp_in_dt()
         least_time = alert.get_max_delta(self.max_delta)
 
-        timestamp_d = alert.get_timestamp_in_dt().date()
+        index = '%s-%d.%02d.%02d' % (self.alerts, least_time.year,
+                                     least_time.month, least_time.day)
 
-        index = '%s-%d.%02d.%02d' % (self.alerts, timestamp_d.year,
-                                     timestamp_d.month, timestamp_d.day)
-
-        if not self.es.indices.exists(index=index):
-            self.es.indices.create(index=index, ignore=[400, 404])
-
-        old_alert_dict = self.__search_alert(index, alert.title,
+        old_alert_dict = self.__search_alert(alert.a_type, alert.description,
                                              least_time, alert.timestamp)
 
-        self.__push_or_update(index, timestamp_d, old_alert_dict, alert)
+        self.__push_or_update(index, timestamp, old_alert_dict, alert)
 
-        sleep(0.20)
+        sleep(0.6)
 
-    def __search_alert(self, alerts, title, gte, lte):
+    def __search_alert(self, a_type, description, gte, lte):
+        index = '%s-%d.%02d.%02d' % (self.alerts, gte.year, gte.month, gte.day)
+
         jason = {
             'query': {
                 'bool': {
                     'must': {
                         'match': {
-                            'title': title
+                            'a_type': a_type
                         }
                     },
                     'filter': {
@@ -63,40 +61,46 @@ class Pusher:
             }
         }
 
-        res = self.es.search(index=alerts, body=jason)
+        old_alert_dict = None
 
-        old_alert = None
-        for hit in res['hits']['hits']:
-            old_alert = hit
+        if self.es.indices.exists(index=index):
+            res = self.es.search(index=index, body=jason)
 
-        return old_alert
+            for hit in res['hits']['hits']:
+                if hit['_source']['description'] == description:
+                    old_alert_dict = hit
 
-    def __push_or_update(self, index, timestamp_d, old_alert_dict, alert):
+        return old_alert_dict
+
+    def __push_or_update(self, index, timestamp, old_alert_dict, alert):
         if old_alert_dict is None:
             self.__push_new_alert(index, alert)
         else:
             old_alert = Alert.from_dict(old_alert_dict['_source'])
 
-            old_timestamp_d = old_alert.get_timestamp_in_dt().date()
+            old_timestamp = old_alert.get_timestamp_in_dt()
 
-            if old_timestamp_d != timestamp_d:
+            if old_timestamp.date() != timestamp.date():
                 index = '%s-%d.%02d.%02d' % (self.alerts,
-                                             old_timestamp_d.year,
-                                             old_timestamp_d.month,
-                                             old_timestamp_d.day)
+                                             old_timestamp.year,
+                                             old_timestamp.month,
+                                             old_timestamp.day)
 
             self.__update_alert(index, old_alert_dict['_id'], old_alert, alert)
 
-    def __push_new_alert(self, alerts, alert):
-        res = self.es.index(index=alerts, doc_type='doc',
+    def __push_new_alert(self, index, alert):
+        if not self.es.indices.exists(index=index):
+            self.es.indices.create(index=index, ignore=[400, 404])
+
+        res = self.es.index(index=index, doc_type='doc',
                             body=alert.to_dict())
 
-        print('[++] [%s] %s' % (alert.title, res['_id']))
+        print('[++] [%s] %s' % (alert.description, res['_id']))
 
-    def __update_alert(self, alerts, _id, old_alert, new_alert):
+    def __update_alert(self, index, _id, old_alert, new_alert):
         old_alert.merge(new_alert)
 
-        self.es.update(index=alerts, doc_type='doc', id=_id,
+        self.es.update(index=index, doc_type='doc', id=_id,
                        body={'doc': old_alert.to_dict()})
 
         print('[+=] Updated alert %s' % _id)

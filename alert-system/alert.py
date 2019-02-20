@@ -2,26 +2,27 @@ from datetime import datetime, timedelta
 
 
 # timestamp: the timestamp of the alert
-# title: the title of the alert
+# description: the description of the alert
 # indices: the list of entry indices related to the alert
 # count: the number of times the alert was triggered
 # last_seen: the timestamp of the last time the alert was triggered
-# query: the search query, None if first time alert is triggered
 class Alert:
 
-    def __init__(self, timestamp, title, index, count, last_seen, specs):
+    def __init__(self, a_type, timestamp, description, index, count, last_seen):
+        self.a_type = a_type
         self.timestamp = timestamp
-        self.title = title
+        self.description = description
         self.indices = [index]
         self.count = count
         self.last_seen = last_seen
-        self.specs = [specs]
+
+    # def init(self, **jason):
+    #     self.__dict__.update(jason)
 
     def merge(self, new_alert):
         self.__update_indices(new_alert.indices)
         self.__update_count()
         self.__update_last_seen(new_alert.timestamp)
-        self.__update_specs(new_alert.specs)
 
     def get_max_delta(self, max_delta):
         datetime_t = self.get_timestamp_in_dt()
@@ -33,12 +34,12 @@ class Alert:
 
     def to_dict(self):
         data = {
+            'a_type': self.a_type,
             'timestamp': self.timestamp,
-            'title': self.title,
+            'description': self.description,
             'indices': self.indices,
             'count': self.count,
             'last_seen': self.last_seen,
-            'specs': self.specs
         }
 
         return data
@@ -52,10 +53,63 @@ class Alert:
     def __update_last_seen(self, new_last_seen):
         self.last_seen = new_last_seen
 
-    def __update_specs(self, new_spec):
-        self.specs.extend(new_spec)
-
     @staticmethod
     def from_dict(jason):
-        return Alert(jason['timestamp'], jason['title'], jason['indices'],
-                     jason['count'], jason['last_seen'], jason['specs'])
+        a_type = jason['a_type']
+
+        if a_type == 'RCE':
+            return RCEAlert(jason['timestamp'], jason['description'],
+                            jason['indices'], jason['count'],
+                            jason['last_seen'], jason['commands'])
+        elif a_type == 'Enum':
+            return EnumAlert(jason['timestamp'], jason['description'],
+                             jason['indices'], jason['count'],
+                             jason['last_seen'], jason['kubectl_commands'])
+        else:
+            return Alert(jason['a_type'], jason['timestamp'],
+                         jason['description'], jason['indices'],
+                         jason['count'], jason['last_seen'])
+
+
+class RCEAlert(Alert):
+    def __init__(self, timestamp, description, index, count, last_seen,
+                 command):
+        super().__init__('RCE', timestamp, description, index, count,
+                         last_seen)
+
+        self.commands = [command]
+
+    def merge(self, new_alert):
+        super().merge(new_alert)
+
+        self.__update_commands(new_alert.commands)
+
+    def to_dict(self):
+        data = super().to_dict()
+        data['commands'] = self.commands
+        return data
+
+    def __update_commands(self, new_commands):
+        self.commands.extend(new_commands)
+
+
+class EnumAlert(Alert):
+    def __init__(self, timestamp, description, index, count, last_seen,
+                 kubectl_commands):
+        super().__init__('Enum', timestamp, description, index, count,
+                         last_seen)
+
+        self.kubectl_commands = [kubectl_commands]
+
+    def merge(self, new_alert):
+        super().merge(new_alert)
+
+        self.__update_commands(new_alert.kubectl_commands)
+
+    def to_dict(self):
+        data = super().to_dict()
+        data['kubectl_commands'] = self.kubectl_commands
+        return data
+
+    def __update_commands(self, new_kubectl_commands):
+        self.kubectl_commands.extend(new_kubectl_commands)
