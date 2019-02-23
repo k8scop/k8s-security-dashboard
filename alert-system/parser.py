@@ -1,7 +1,14 @@
 from re import search as regsearch
 from urllib.parse import unquote
 
-from alert import RCEAlert, EnumAlert
+from alert import RCEAlert, EnumAlert, IntegrityAlert, SecretsAlert
+
+get_pods = r'^/api/v\d+/pods$'
+get_pods_in_namespace = r'^/api/v1/namespaces/[\w\d_-]+/pods$'
+describe_pods = r'^/api/v\d+/pods?includeUninitialized=true$'
+describe_pod = r'^/api/v\d+/namespaces/[\w\d_-]+/pods/[\w\d_-]+$'
+secrets = r'/api/v\d+/namespaces/[\w\d_-]+/secrets/[\w\d_-]+$'
+command_exec = r'^/api/v\d+/namespaces/[\w\d_-]+/pods/[\w\d_-]+/exec?'
 
 
 class Parser:
@@ -34,14 +41,77 @@ class Parser:
         user = source['user']
         uri = source['uri']
 
-        if 'pods' in uri:
-            self.__enum_alerts(index, timestamp, user, uri)
+        description = {}
+        description['user'] = user
 
-        if 'exec?' in uri:
-            self.__rce_alerts(index, timestamp, user, uri)
+        alert = None
+
+        if regsearch(get_pods, uri):
+            description['title'] = 'Pod enumeration detected'
+
+            enums = 'get pods --all-namepspaces'
+
+            alert = EnumAlert(timestamp, description,
+                              index, 1, timestamp, enums)
+        elif regsearch(get_pods_in_namespace, uri):
+            namespace = self.__find_namespace(uri)
+
+            if source['method'] == 'create':
+                description['title'] = 'Pod creation detected.'
+                description['namespace'] = namespace
+
+                alert = IntegrityAlert(timestamp, description,
+                                       index, 1, timestamp)
+            else:
+                description['title'] = 'Pod enumeration detected'
+
+                enums = 'get pods --namespace %s' % self.__find_namespace(uri)
+
+                alert = EnumAlert(timestamp, description,
+                                  index, 1, timestamp, enums)
+        elif regsearch(describe_pods, uri):
+            description['title'] = 'Pod enumeration detected'
+
+            enums = 'describe pods --all-namespaces'
+
+            alert = EnumAlert(timestamp, description,
+                              index, 1, timestamp, enums)
+        elif regsearch(describe_pod, uri):
+            description['title'] = 'Pod enumeration detected'
+
+            enums = 'describe %s --namespace %s' % (
+                self.__find_pod(uri), self.__find_namespace(uri))
+
+            alert = EnumAlert(timestamp, description,
+                              index, 1, timestamp, enums)
+        elif regsearch(secrets, uri):
+            description['title'] = 'Attempt to retrieve secrets'
+            description['namespace'] = self.__find_namespace(uri)
+            description['pod'] = self.__find_secrets_pod(uri)
+            description['response'] = source['response']
+
+            alert = SecretsAlert(timestamp, description, index, 1, timestamp)
+        elif regsearch(command_exec, uri):
+            description['user'] = user
+            description['namespace'] = self.__find_namespace(uri)
+            description['pod'] = self.__find_pod(uri)
+            description['container'] = self.__find_container(uri)
+
+            command = self.__parse_command(uri)
+
+            if 'mnt' in command:
+                description['title'] = 'Attempt to mount filesystem'
+            else:
+                description['title'] = 'Command execution detected'
+
+            alert = RCEAlert(timestamp, description,
+                             index, 1, timestamp, command)
+
+        if alert:
+            self.push_queue.put(alert)
 
     def __find_namespace(self, uri):
-        hit = regsearch('namespaces/[A-Za-z0-9_-]+', uri)
+        hit = regsearch(r'namespaces/[\w\d_-]+', uri)
 
         if hit:
             substring = hit.group(0)
@@ -51,7 +121,17 @@ class Parser:
             return -1
 
     def __find_pod(self, uri):
-        hit = regsearch('pods/[A-Za-z0-9_-]+', uri)
+        hit = regsearch(r'pods/[\w\d_-]+', uri)
+
+        if hit:
+            substring = hit.group(0)
+            tokens = substring.split('/')
+            return tokens[1]
+        else:
+            return -1
+
+    def __find_secrets_pod(self, uri):
+        hit = regsearch(r'secrets/[\w\d_-]+', uri)
 
         if hit:
             substring = hit.group(0)
@@ -61,7 +141,7 @@ class Parser:
             return -1
 
     def __find_container(self, uri):
-        hit = regsearch('container=[A-Za-z0-9_-]+', uri)
+        hit = regsearch(r'container=[\w\d_-]+', uri)
 
         if hit:
             substring = hit.group(0)
@@ -69,54 +149,6 @@ class Parser:
             return tokens[1]
         else:
             return -1
-
-    def __enum_alerts(self, index, timestamp, user, uri):
-        description = {}
-        description['title'] = 'Pod enumeration detected'
-        description['user'] = user
-
-        regex = '/api/v[0-9]+/pods'
-
-        if regsearch('%s%s' % (regex, '?'), uri):
-            kubectl_command = 'describe pods --all-namespaces'
-
-            alert = EnumAlert(timestamp, description, index, 1, timestamp,
-                              kubectl_command)
-
-        elif regsearch(regex, uri):
-            kubectl_command = 'get all-namespaces'
-
-            alert = EnumAlert(timestamp, description, index, 1, timestamp,
-                              kubectl_command)
-
-        else:
-            namespace = self.__find_namespace(uri)
-            pods = self.__find_pod(uri)
-
-            if pods is -1:
-                kubectl_command = 'get pods --namespace %s' % namespace
-            else:
-                kubectl_command = 'describe [pods] %s --namespace %s' % (pods, namespace)
-
-        alert = EnumAlert(timestamp, description, index, 1, timestamp,
-                          kubectl_command)
-
-        self.push_queue.put(alert)
-
-    def __rce_alerts(self, index, timestamp, user, uri):
-        description = {}
-
-        description['title'] = 'Command execution detected'
-        description['user'] = user
-        description['namespace'] = self.__find_namespace(uri)
-        description['pod'] = self.__find_pod(uri)
-        description['container'] = self.__find_container(uri)
-
-        command = self.__parse_command(uri)
-
-        alert = RCEAlert(timestamp, description, index, 1, timestamp, command)
-
-        self.push_queue.put(alert)
 
     def __parse_command(self, uri):
         command = ''

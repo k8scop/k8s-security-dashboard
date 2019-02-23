@@ -16,9 +16,6 @@ class Alert:
         self.count = count
         self.last_seen = last_seen
 
-    # def init(self, **jason):
-    #     self.__dict__.update(jason)
-
     def merge(self, new_alert):
         self.__update_indices(new_alert.indices)
         self.__update_count()
@@ -57,18 +54,60 @@ class Alert:
     def from_dict(jason):
         a_type = jason['a_type']
 
-        if a_type == 'RCE':
+        if a_type == 'Enum':
+            return EnumAlert(jason['timestamp'], jason['description'],
+                             jason['indices'], jason['count'],
+                             jason['last_seen'], jason['enums'])
+        elif a_type == 'Integrity':
+            return IntegrityAlert(jason['timestamp'], jason['description'],
+                                  jason['indices'], jason['count'],
+                                  jason['last_seen'])
+        elif a_type == 'Secrets':
+            return SecretsAlert(jason['timestamp'], jason['description'],
+                                jason['indices'], jason['count'],
+                                jason['last_seen'])
+        elif a_type == 'RCE':
             return RCEAlert(jason['timestamp'], jason['description'],
                             jason['indices'], jason['count'],
                             jason['last_seen'], jason['commands'])
-        elif a_type == 'Enum':
-            return EnumAlert(jason['timestamp'], jason['description'],
-                             jason['indices'], jason['count'],
-                             jason['last_seen'], jason['kubectl_commands'])
         else:
             return Alert(jason['a_type'], jason['timestamp'],
                          jason['description'], jason['indices'],
                          jason['count'], jason['last_seen'])
+
+
+class EnumAlert(Alert):
+    def __init__(self, timestamp, description, index, count, last_seen,
+                 enums):
+        super().__init__('Enum', timestamp, description, index, count,
+                         last_seen)
+
+        self.enums = [enums]
+
+    def merge(self, new_alert):
+        super().merge(new_alert)
+
+        self.__update_commands(new_alert.enums)
+
+    def to_dict(self):
+        data = super().to_dict()
+        data['enums'] = self.enums
+        return data
+
+    def __update_commands(self, new_enums):
+        self.enums.extend(new_enums)
+
+
+class IntegrityAlert(Alert):
+    def __init__(self, timestamp, description, index, count, last_seen):
+        super().__init__('Integrity', timestamp, description, index, count,
+                         last_seen)
+
+
+class SecretsAlert(Alert):
+    def __init__(self, timestamp, description, index, count, last_seen):
+        super().__init__('Secrets', timestamp, description, index, count,
+                         last_seen)
 
 
 class RCEAlert(Alert):
@@ -91,25 +130,3 @@ class RCEAlert(Alert):
 
     def __update_commands(self, new_commands):
         self.commands.extend(new_commands)
-
-
-class EnumAlert(Alert):
-    def __init__(self, timestamp, description, index, count, last_seen,
-                 kubectl_commands):
-        super().__init__('Enum', timestamp, description, index, count,
-                         last_seen)
-
-        self.kubectl_commands = [kubectl_commands]
-
-    def merge(self, new_alert):
-        super().merge(new_alert)
-
-        self.__update_commands(new_alert.kubectl_commands)
-
-    def to_dict(self):
-        data = super().to_dict()
-        data['kubectl_commands'] = self.kubectl_commands
-        return data
-
-    def __update_commands(self, new_kubectl_commands):
-        self.kubectl_commands.extend(new_kubectl_commands)

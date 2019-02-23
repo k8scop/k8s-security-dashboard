@@ -57,8 +57,8 @@ class Fetcher:
             self.__fetch_logs(index, gte, temp_lte)
 
     def __fetch_all_day(self, cursor_d):
-        index = '%s-%d.%02d.%02d' % (self.pages, cursor_d.year, cursor_d.month,
-                                     cursor_d.day)
+        index = '%s-%d.%02d.%02d' % (self.pages, cursor_d.year,
+                                     cursor_d.month, cursor_d.day)
 
         if self.es.indices.exists(index=index):
             temp_gte = datetime(cursor_d.year, cursor_d.month,
