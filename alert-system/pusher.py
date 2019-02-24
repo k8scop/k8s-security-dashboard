@@ -4,7 +4,8 @@ from alert import Alert
 
 
 class Pusher:
-    def __init__(self, es, alerts, max_delta, push_queue, tracker):
+    def __init__(self, name, es, alerts, max_delta, push_queue, tracker):
+        self.name = name
         self.es = es
         self.alerts = alerts
         self.max_delta = max_delta
@@ -19,7 +20,7 @@ class Pusher:
                 if self.tracker.tracking:
                     if self.tracker.parser_done:
                         self.tracker.pusher_done = True
-                        print('[x] Pusher is done')
+                        print('[x] %s Pusher is done' % self.name)
                         return
 
     def __push_alert(self):
@@ -28,15 +29,10 @@ class Pusher:
         timestamp = alert.get_timestamp_in_dt()
         least_time = alert.get_max_delta(self.max_delta)
 
-        index = '%s-%d.%02d.%02d' % (self.alerts, least_time.year,
-                                     least_time.month, least_time.day)
-
         old_alert_dict = self.__search_alert(alert.a_type, alert.description,
                                              least_time, alert.timestamp)
 
-        self.__push_or_update(index, timestamp, old_alert_dict, alert)
-
-        sleep(0.6)
+        self.__push_or_update(timestamp, old_alert_dict, alert)
 
     def __search_alert(self, a_type, description, gte, lte):
         index = '%s-%d.%02d.%02d' % (self.alerts, gte.year, gte.month, gte.day)
@@ -69,11 +65,15 @@ class Pusher:
             for hit in res['hits']['hits']:
                 if hit['_source']['description'] == description:
                     old_alert_dict = hit
+                    break
 
         return old_alert_dict
 
-    def __push_or_update(self, index, timestamp, old_alert_dict, alert):
+    def __push_or_update(self, timestamp, old_alert_dict, alert):
         if old_alert_dict is None:
+            index = '%s-%d.%02d.%02d' % (self.alerts, timestamp.year,
+                                         timestamp.month, timestamp.day)
+
             self.__push_new_alert(index, alert)
         else:
             old_alert = Alert.from_dict(old_alert_dict['_source'])
@@ -85,6 +85,9 @@ class Pusher:
                                              old_timestamp.year,
                                              old_timestamp.month,
                                              old_timestamp.day)
+            else:
+                index = '%s-%d.%02d.%02d' % (self.alerts, timestamp.year,
+                                             timestamp.month, timestamp.day)
 
             self.__update_alert(index, old_alert_dict['_id'], old_alert, alert)
 
@@ -97,6 +100,8 @@ class Pusher:
 
         print('[++] [%s] %s' % (alert.description, res['_id']))
 
+        sleep(3)
+
     def __update_alert(self, index, _id, old_alert, new_alert):
         old_alert.merge(new_alert)
 
@@ -104,3 +109,5 @@ class Pusher:
                        body={'doc': old_alert.to_dict()})
 
         print('[+=] Updated alert %s' % _id)
+
+        sleep(1)

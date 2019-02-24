@@ -124,25 +124,44 @@ if __name__ == '__main__':
 
     try:
         fetch_queue = Queue()
-        push_queue = Queue()
+
+        push_queue_dict = {}
+        push_queue_dict['Enum'] = Queue()
+        push_queue_dict['Integrity'] = Queue()
+        push_queue_dict['Secrets'] = Queue()
+        push_queue_dict['RCE'] = Queue()
 
         print('[*] Initialising fetcher, parser, pusher components')
         fetcher = Fetcher(es, pages, fetch_delay, fetch_queue, tracker)
-        parser = Parser(fetch_queue, push_queue, tracker)
-        pusher = Pusher(es, alerts, max_alert_delta, push_queue, tracker)
+        parser = Parser(fetch_queue, push_queue_dict, tracker)
+
+        pusher_enu = Pusher('Enum', es, alerts, max_alert_delta,
+                            push_queue_dict['Enum'], tracker)
+        pusher_int = Pusher('Integrity', es, alerts, max_alert_delta,
+                            push_queue_dict['Integrity'], tracker)
+        pusher_sec = Pusher('Secrets', es, alerts, max_alert_delta,
+                            push_queue_dict['Secrets'], tracker)
+        pusher_rce = Pusher('RCE', es, alerts, max_alert_delta,
+                            push_queue_dict['RCE'], tracker)
         print('[+] Components initialised')
     except Exception as e:
         print('[!] Something went terribly wrong')
         print('[-] %s' % e)
         exit(0)
 
-    parser_t = Thread(target=parser.parse)
-    pusher_t = Thread(target=pusher.push)
     fetcher_t = Thread(target=fetcher.fetch, args=(start, end))
+
+    parser_t = Thread(target=parser.parse)
+
+    pusher_t1 = Thread(target=pusher_enu.push)
+    pusher_t2 = Thread(target=pusher_int.push)
+    pusher_t3 = Thread(target=pusher_sec.push)
+    pusher_t4 = Thread(target=pusher_rce.push)
 
     try:
         print('[*] Launching threads')
-        run_processes([fetcher_t, parser_t, pusher_t])
+        run_processes([fetcher_t, parser_t, pusher_t1, pusher_t2,
+                       pusher_t3, pusher_t4])
         print('[x] K8sCop is done')
     except KeyboardInterrupt:
         print('[!] K8sCop force quit')

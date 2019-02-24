@@ -12,9 +12,9 @@ command_exec = r'^/api/v\d+/namespaces/[\w\d_-]+/pods/[\w\d_-]+/exec?'
 
 
 class Parser:
-    def __init__(self, fetch_queue, push_queue, tracker):
+    def __init__(self, fetch_queue, push_queue_dict, tracker):
         self.fetch_queue = fetch_queue
-        self.push_queue = push_queue
+        self.push_queue_dict = push_queue_dict
         self.tracker = tracker
 
     def parse(self):
@@ -31,9 +31,12 @@ class Parser:
     def __parse_log(self):
         element = self.fetch_queue.get()
 
-        self.__find_alerts(element)
+        alert = self.__create_alert(element)
 
-    def __find_alerts(self, element):
+        if alert:
+            self.push_queue_dict[alert.a_type].put(alert)
+
+    def __create_alert(self, element):
         source = element['_source']
         index = element['_id']
 
@@ -52,12 +55,12 @@ class Parser:
             enums = 'get pods --all-namepspaces'
 
             alert = EnumAlert(timestamp, description,
-                              index, 1, timestamp, enums)
+                              index, 1, timestamp, [enums])
         elif regsearch(get_pods_in_namespace, uri):
             namespace = self.__find_namespace(uri)
 
             if source['method'] == 'create':
-                description['title'] = 'Pod creation detected.'
+                description['title'] = 'Pod creation detected'
                 description['namespace'] = namespace
 
                 alert = IntegrityAlert(timestamp, description,
@@ -68,14 +71,14 @@ class Parser:
                 enums = 'get pods --namespace %s' % self.__find_namespace(uri)
 
                 alert = EnumAlert(timestamp, description,
-                                  index, 1, timestamp, enums)
+                                  index, 1, timestamp, [enums])
         elif regsearch(describe_pods, uri):
             description['title'] = 'Pod enumeration detected'
 
             enums = 'describe pods --all-namespaces'
 
             alert = EnumAlert(timestamp, description,
-                              index, 1, timestamp, enums)
+                              index, 1, timestamp, [enums])
         elif regsearch(describe_pod, uri):
             description['title'] = 'Pod enumeration detected'
 
@@ -83,14 +86,16 @@ class Parser:
                 self.__find_pod(uri), self.__find_namespace(uri))
 
             alert = EnumAlert(timestamp, description,
-                              index, 1, timestamp, enums)
+                              index, 1, timestamp, [enums])
         elif regsearch(secrets, uri):
             description['title'] = 'Attempt to retrieve secrets'
             description['namespace'] = self.__find_namespace(uri)
             description['pod'] = self.__find_secrets_pod(uri)
-            description['response'] = source['response']
 
-            alert = SecretsAlert(timestamp, description, index, 1, timestamp)
+            response = source['response']
+
+            alert = SecretsAlert(timestamp, description, index, 1, timestamp,
+                                 [response])
         elif regsearch(command_exec, uri):
             description['user'] = user
             description['namespace'] = self.__find_namespace(uri)
@@ -105,10 +110,9 @@ class Parser:
                 description['title'] = 'Command execution detected'
 
             alert = RCEAlert(timestamp, description,
-                             index, 1, timestamp, command)
+                             index, 1, timestamp, [command])
 
-        if alert:
-            self.push_queue.put(alert)
+        return alert
 
     def __find_namespace(self, uri):
         hit = regsearch(r'namespaces/[\w\d_-]+', uri)

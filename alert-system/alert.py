@@ -7,8 +7,8 @@ from datetime import datetime, timedelta
 # count: the number of times the alert was triggered
 # last_seen: the timestamp of the last time the alert was triggered
 class Alert:
-
-    def __init__(self, a_type, timestamp, description, index, count, last_seen):
+    def __init__(self, a_type, timestamp, description, index, count,
+                 last_seen):
         self.a_type = a_type
         self.timestamp = timestamp
         self.description = description
@@ -65,7 +65,7 @@ class Alert:
         elif a_type == 'Secrets':
             return SecretsAlert(jason['timestamp'], jason['description'],
                                 jason['indices'], jason['count'],
-                                jason['last_seen'])
+                                jason['last_seen'], jason['responses'])
         elif a_type == 'RCE':
             return RCEAlert(jason['timestamp'], jason['description'],
                             jason['indices'], jason['count'],
@@ -82,19 +82,19 @@ class EnumAlert(Alert):
         super().__init__('Enum', timestamp, description, index, count,
                          last_seen)
 
-        self.enums = [enums]
+        self.enums = enums
 
     def merge(self, new_alert):
         super().merge(new_alert)
 
-        self.__update_commands(new_alert.enums)
+        self.__update_enums(new_alert.enums)
 
     def to_dict(self):
         data = super().to_dict()
         data['enums'] = self.enums
         return data
 
-    def __update_commands(self, new_enums):
+    def __update_enums(self, new_enums):
         self.enums.extend(new_enums)
 
 
@@ -105,18 +105,34 @@ class IntegrityAlert(Alert):
 
 
 class SecretsAlert(Alert):
-    def __init__(self, timestamp, description, index, count, last_seen):
+    def __init__(self, timestamp, description, index, count, last_seen,
+                 responses):
         super().__init__('Secrets', timestamp, description, index, count,
                          last_seen)
+
+        self.responses = [responses]
+
+    def merge(self, new_alert):
+        super().merge(new_alert)
+
+        self.__update_responses(new_alert.responses)
+
+    def to_dict(self):
+        data = super().to_dict()
+        data['responses'] = self.responses
+        return data
+
+    def __update_responses(self, new_responses):
+        self.responses.extend(new_responses)
 
 
 class RCEAlert(Alert):
     def __init__(self, timestamp, description, index, count, last_seen,
-                 command):
+                 commands):
         super().__init__('RCE', timestamp, description, index, count,
                          last_seen)
 
-        self.commands = [command]
+        self.commands = commands
 
     def merge(self, new_alert):
         super().merge(new_alert)
