@@ -84,7 +84,7 @@ class Fetcher:
                 'bool': {
                     'must': {
                         'match': {
-                            'tag': 'audit'
+                            'origin': 'audit'
                         }
                     },
                     'filter': {

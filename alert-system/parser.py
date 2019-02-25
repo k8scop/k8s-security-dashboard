@@ -41,76 +41,75 @@ class Parser:
         index = element['_id']
 
         timestamp = source['@timestamp']
-        user = source['user']
-        uri = source['uri']
-
-        description = {}
-        description['user'] = user
+        user = source['user']['username']
+        uri = source['requestURI']
 
         alert = None
 
         if regsearch(get_pods, uri):
-            description['title'] = 'Pod enumeration detected'
+            description = 'Pod enumeration on all namespaces'
 
-            enums = 'get pods --all-namepspaces'
+            kubectl = 'get pods --all-namepspaces'
 
-            alert = EnumAlert(timestamp, description,
-                              index, 1, timestamp, [enums])
+            alert = EnumAlert(timestamp, description, index, user,
+                              'N/A', 'N/A', kubectl)
         elif regsearch(get_pods_in_namespace, uri):
             namespace = self.__find_namespace(uri)
 
-            if source['method'] == 'create':
-                description['title'] = 'Pod creation detected'
-                description['namespace'] = namespace
+            if source['verb'] == 'create':
+                description = 'Pod creation on %s' % namespace
 
-                alert = IntegrityAlert(timestamp, description,
-                                       index, 1, timestamp)
+                alert = IntegrityAlert(timestamp, description, index, user,
+                                       namespace)
             else:
-                description['title'] = 'Pod enumeration detected'
+                description = 'Pod enumeration on %s' % namespace
 
-                enums = 'get pods --namespace %s' % self.__find_namespace(uri)
+                kubectl = 'get pods --namespace %s' % namespace
 
-                alert = EnumAlert(timestamp, description,
-                                  index, 1, timestamp, [enums])
+                alert = EnumAlert(timestamp, description, index, user,
+                                  namespace, 'N/A', kubectl)
         elif regsearch(describe_pods, uri):
-            description['title'] = 'Pod enumeration detected'
+            description = 'Describe request on all pods'
 
-            enums = 'describe pods --all-namespaces'
+            kubectl = 'describe pods --all-namespaces'
 
-            alert = EnumAlert(timestamp, description,
-                              index, 1, timestamp, [enums])
+            alert = EnumAlert(timestamp, description, index, user, 
+                              'N/A', 'N/A', kubectl)
         elif regsearch(describe_pod, uri):
-            description['title'] = 'Pod enumeration detected'
+            namespace = self.__find_namespace(uri)
+            pod = self.__find_pod(uri)
 
-            enums = 'describe %s --namespace %s' % (
-                self.__find_pod(uri), self.__find_namespace(uri))
+            description = 'Describe request on pod %s in %s' % (pod, namespace)
 
-            alert = EnumAlert(timestamp, description,
-                              index, 1, timestamp, [enums])
+            kubectl = 'describe %s --namespace %s' % (pod, namespace)
+
+            alert = EnumAlert(timestamp, description, index, user,
+                              namespace, pod, kubectl)
         elif regsearch(secrets, uri):
-            description['title'] = 'Attempt to retrieve secrets'
-            description['namespace'] = self.__find_namespace(uri)
-            description['pod'] = self.__find_secrets_pod(uri)
+            description = 'Attempt to retrieve secrets'
 
-            response = source['response']
+            namespace = self.__find_namespace(uri)
+            pod = self.__find_secrets_pod(uri)
 
-            alert = SecretsAlert(timestamp, description, index, 1, timestamp,
-                                 [response])
+            if 'responseStatus' in source:
+                response = source['responseStatus']['code']
+
+                alert = SecretsAlert(timestamp, description, index, user,
+                                     namespace, pod, response)
         elif regsearch(command_exec, uri):
-            description['user'] = user
-            description['namespace'] = self.__find_namespace(uri)
-            description['pod'] = self.__find_pod(uri)
-            description['container'] = self.__find_container(uri)
+            namespace = self.__find_namespace(uri)
+            pod = self.__find_pod(uri)
+            container = self.__find_container(uri)
 
             command = self.__parse_command(uri)
 
             if 'mnt' in command:
-                description['title'] = 'Attempt to mount filesystem'
+                description = 'Attempt to mount filesystem'
             else:
-                description['title'] = 'Command execution detected'
+                description = 'Command execution detected'
 
-            alert = RCEAlert(timestamp, description,
-                             index, 1, timestamp, [command])
+            alert = RCEAlert(timestamp, description, index, user,
+                             namespace, pod, container, command)
 
         return alert
 

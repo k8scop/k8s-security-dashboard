@@ -21,7 +21,6 @@ alerts = ''
 start = None
 end = None
 
-max_alert_delta = 0
 fetch_delay = 0
 
 tracker = Tracker(False, False, False, False)
@@ -47,11 +46,6 @@ def parse_arguments():
                           help='Start date and time yyyy-m-d-h-m-s',
                           required=True)
 
-    required.add_argument('--max-alert-delta', '-D', dest='max_alert_delta',
-                          type=int,
-                          help='Max delta for alert aggregation in seconds',
-                          required=True)
-
     required.add_argument('--analysis', '-A', dest='analysis', type=str,
                           choices=['static', 'streaming'],
                           help='K8sCop static or streaming analysis',
@@ -75,7 +69,6 @@ def init_globals(args):
     global alerts
     global start
     global end
-    global max_alert_delta
     global fetch_delay
     global tracker
 
@@ -102,8 +95,6 @@ def init_globals(args):
     else:
         end = datetime.utcnow() - timedelta(seconds=fetch_delay)
         fetch_delay = args.fetch_delay
-
-    max_alert_delta = args.max_alert_delta
 
 
 def run_processes(steve_jobs):
@@ -135,13 +126,13 @@ if __name__ == '__main__':
         fetcher = Fetcher(es, pages, fetch_delay, fetch_queue, tracker)
         parser = Parser(fetch_queue, push_queue_dict, tracker)
 
-        pusher_enu = Pusher('Enum', es, alerts, max_alert_delta,
+        pusher_enu = Pusher('Enum', es, alerts,
                             push_queue_dict['Enum'], tracker)
-        pusher_int = Pusher('Integrity', es, alerts, max_alert_delta,
+        pusher_int = Pusher('Integrity', es, alerts,
                             push_queue_dict['Integrity'], tracker)
-        pusher_sec = Pusher('Secrets', es, alerts, max_alert_delta,
+        pusher_sec = Pusher('Secrets', es, alerts,
                             push_queue_dict['Secrets'], tracker)
-        pusher_rce = Pusher('RCE', es, alerts, max_alert_delta,
+        pusher_rce = Pusher('RCE', es, alerts,
                             push_queue_dict['RCE'], tracker)
         print('[+] Components initialised')
     except Exception as e:
@@ -160,8 +151,8 @@ if __name__ == '__main__':
 
     try:
         print('[*] Launching threads')
-        run_processes([fetcher_t, parser_t, pusher_t1, pusher_t2,
-                       pusher_t3, pusher_t4])
+        run_processes([fetcher_t, parser_t,
+                       pusher_t1, pusher_t2, pusher_t3, pusher_t4])
         print('[x] K8sCop is done')
     except KeyboardInterrupt:
         print('[!] K8sCop force quit')
