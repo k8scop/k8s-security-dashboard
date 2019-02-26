@@ -81,3 +81,7 @@ Omit `init-fluentd` to stream the logs of the actual container.
 |/api/v1/pods?includeUninitialized=true|describe pods --all-namespaces||
 |/api/v1/namespaces/default/secrets?includeUninitialized=true| Followed by multiple token queries|
 |/api/v1/namespaces/default/pods|create -f <pod>| Method create|
+|/api/v1/services?limit=500|get svc --all-namespaces||
+|/apis/extensions/v1beta1/daemonsets |get ds --all-namespaces||
+|/apis/extensions/v1beta1/namespaces/kube-system/daemonsets|get ds --namespace kube-system||
+
