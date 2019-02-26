@@ -36,7 +36,7 @@ rules:
     resources:
     - resources: ["secrets", "configmaps"]
 
-  # A catch-all rule to log all other requests at the request level.
+  # We want to catch a little more then outcoldsolutions specified ;)
   - level: RequestResponse
     omitStages:
       - RequestReceived
