@@ -3,8 +3,9 @@
 <!-- vim-markdown-toc GFM -->
 
 * [Installation](#installation)
-    * [Preparation](#preparation)
+* [kube-apiserver arguments](#kube-apiserver-arguments)
     * [Deploying fluent](#deploying-fluent)
+        * [Preparation](#preparation)
     * [Debugging](#debugging)
 * [Mapping kubectl commands API endpoints](#mapping-kubectl-commands-api-endpoints)
 
@@ -12,7 +13,24 @@
 
 ## Installation
 
-### Preparation
+## kube-apiserver arguments
+
+The `kube-apiserver` has the possiblity to keep and store audit logs. By adding the following arguments to the `/etc/kubernetes/manifests/kube-apiserver.yaml` file:
+
+```bash
+containers:
+  - command:
+    - kube-apiserver
+    [arguments]
+    - --audit-policy-file=/etc/kubernetes/policies/adv-audit.yml
+    - --audit-log-path=/var/log/kubernetes/kube-apiserver-audit.log
+    - --audit-log-format=json
+    [arguments]
+```
+
+### Deploying fluent
+
+#### Preparation
 
 Create the mount directory for the fluent configuration:
 
@@ -27,7 +45,6 @@ Add the files from the `configs/fluent` folder:
 # cp fluent.conf /var/share/volumes/fluent/etc/.
 ```
 
-### Deploying fluent
 
 Change the environment variables to connect to the installed elasticsearch installation:
 
@@ -84,4 +101,3 @@ Omit `init-fluentd` to stream the logs of the actual container.
 |/api/v1/services?limit=500|get svc --all-namespaces||
 |/apis/extensions/v1beta1/daemonsets |get ds --all-namespaces||
 |/apis/extensions/v1beta1/namespaces/kube-system/daemonsets|get ds --namespace kube-system||
-
