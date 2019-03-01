@@ -118,9 +118,9 @@ if __name__ == '__main__':
 
         push_queue_dict = {}
         push_queue_dict['Enum'] = Queue()
-        push_queue_dict['Integrity'] = Queue()
+        push_queue_dict['Tamper'] = Queue()
         push_queue_dict['Secrets'] = Queue()
-        push_queue_dict['RCE'] = Queue()
+        push_queue_dict['Exec'] = Queue()
 
         print('[*] Initialising fetcher, parser, pusher components')
         fetcher = Fetcher(es, pages, fetch_delay, fetch_queue, tracker)
@@ -128,12 +128,12 @@ if __name__ == '__main__':
 
         pusher_enu = Pusher('Enum', es, alerts,
                             push_queue_dict['Enum'], tracker)
-        pusher_int = Pusher('Integrity', es, alerts,
-                            push_queue_dict['Integrity'], tracker)
+        pusher_tam = Pusher('Tamper', es, alerts,
+                            push_queue_dict['Tamper'], tracker)
         pusher_sec = Pusher('Secrets', es, alerts,
                             push_queue_dict['Secrets'], tracker)
-        pusher_rce = Pusher('RCE', es, alerts,
-                            push_queue_dict['RCE'], tracker)
+        pusher_rce = Pusher('Exec', es, alerts,
+                            push_queue_dict['Exec'], tracker)
         print('[+] Components initialised')
     except Exception as e:
         print('[!] Something went terribly wrong')
@@ -145,7 +145,7 @@ if __name__ == '__main__':
     parser_t = Thread(target=parser.parse)
 
     pusher_t1 = Thread(target=pusher_enu.push)
-    pusher_t2 = Thread(target=pusher_int.push)
+    pusher_t2 = Thread(target=pusher_tam.push)
     pusher_t3 = Thread(target=pusher_sec.push)
     pusher_t4 = Thread(target=pusher_rce.push)
 

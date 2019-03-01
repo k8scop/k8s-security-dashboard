@@ -44,17 +44,19 @@ class EnumAlert(Alert):
         return data
 
 
-class IntegrityAlert(Alert):
+class TamperAlert(Alert):
     def __init__(self, timestamp, description, index, user,
-                 namespace):
-        super().__init__('Integrity', timestamp, description, index, user)
+                 namespace, pod):
+        super().__init__('Tamper', timestamp, description, index, user)
 
         self.namespace = namespace
+        self.pod = pod
 
     def to_dict(self):
         data = super().to_dict()
 
         data['namespace'] = self.namespace
+        data['pod'] = self.pod
 
         return data
 
@@ -78,10 +80,10 @@ class SecretsAlert(Alert):
         return data
 
 
-class RCEAlert(Alert):
+class ExecAlert(Alert):
     def __init__(self, timestamp, description, index, user,
                  namespace, pod, container, command):
-        super().__init__('RCE', timestamp, description, index, user)
+        super().__init__('Exec', timestamp, description, index, user)
 
         self.namespace = namespace
         self.pod = pod
