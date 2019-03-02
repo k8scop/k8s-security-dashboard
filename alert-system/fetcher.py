@@ -44,21 +44,24 @@ class Fetcher:
             return
 
     def __fetch_single_day(self, gte, lte):
-        index = '%s-%d.%02d.%02d' % (self.pages, gte.year, gte.month, gte.day)
+        # index = '%s-%d.%02d.%02d' % (self.pages, gte.year, gte.month, gte.day)
+        index = f'{self.pages}-{gte.year}.{gte.month:02d}.{gte.day:02d}'
 
         if self.es.indices.exists(index=index):
             self.__fetch_logs(index, gte, lte)
 
     def __fetch_first_day(self, gte):
-        index = '%s-%d.%02d.%02d' % (self.pages, gte.year, gte.month, gte.day)
+        # index = '%s-%d.%02d.%02d' % (self.pages, gte.year, gte.month, gte.day)
+        index = f'{self.pages}-{gte.year}.{gte.month:02d}.{gte.day:02d}'
 
         if self.es.indices.exists(index=index):
             temp_lte = datetime(gte.year, gte.month, gte.day, 23, 59, 59)
             self.__fetch_logs(index, gte, temp_lte)
 
     def __fetch_all_day(self, cursor_d):
-        index = '%s-%d.%02d.%02d' % (self.pages, cursor_d.year,
-                                     cursor_d.month, cursor_d.day)
+        # index = '%s-%d.%02d.%02d' % (self.pages, cursor_d.year,
+        #                              cursor_d.month, cursor_d.day)
+        index = f'{self.pages}-{cursor_d.year}.{cursor_d.month:02d}.{cursor_d.day:02d}'
 
         if self.es.indices.exists(index=index):
             temp_gte = datetime(cursor_d.year, cursor_d.month,
@@ -69,14 +72,15 @@ class Fetcher:
             self.__fetch_logs(index, temp_gte, temp_lte)
 
     def __fetch_last_day(self, lte):
-        index = '%s-%d.%02d.%02d' % (self.pages, lte.year, lte.month, lte.day)
+        # index = '%s-%d.%02d.%02d' % (self.pages, lte.year, lte.month, lte.day)
+        index = f'{self.pages}-{lte.year}.{lte.month:02d}.{lte.day:02d}'
 
         if self.es.indices.exists(index=index):
             temp_gte = datetime(lte.year, lte.month, lte.day, 0, 0, 0)
             self.__fetch_logs(index, temp_gte, lte)
 
     def __fetch_logs(self, page_index, gte, lte):
-        print('[*] Log data from %s to %s from %s' % (gte, lte, page_index))
+        print(f'[*] Log data from {gte} to {lte} from {page_index}')
 
         jason = {
             'sort': [{'@timestamp': {'order': 'asc'}}],
@@ -84,7 +88,7 @@ class Fetcher:
                 'bool': {
                     'must': {
                         'match': {
-                            'tag': 'audit'
+                            'origin': 'audit'
                         }
                     },
                     'filter': {
@@ -103,7 +107,7 @@ class Fetcher:
                     preserve_order=True, query=jason)
         count = self.__add_to_fetch_queue(res)
 
-        print('[+] Amount of data fetched: %d' % count)
+        print(f'[+] Amount of data fetched: {count}')
 
     def __add_to_fetch_queue(self, res):
         count = 0

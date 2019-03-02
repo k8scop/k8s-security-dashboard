@@ -21,7 +21,6 @@ alerts = ''
 start = None
 end = None
 
-max_alert_delta = 0
 fetch_delay = 0
 
 tracker = Tracker(False, False, False, False)
@@ -47,11 +46,6 @@ def parse_arguments():
                           help='Start date and time yyyy-m-d-h-m-s',
                           required=True)
 
-    required.add_argument('--max-alert-delta', '-D', dest='max_alert_delta',
-                          type=int,
-                          help='Max delta for alert aggregation in seconds',
-                          required=True)
-
     required.add_argument('--analysis', '-A', dest='analysis', type=str,
                           choices=['static', 'streaming'],
                           help='K8sCop static or streaming analysis',
@@ -62,7 +56,7 @@ def parse_arguments():
                           help='End date and time yyyy-m-d-h-s or now')
 
     optional.add_argument('--fetch-delay', '-d', dest='fetch_delay', type=int,
-                          choices=[5, 10, 12], default=10,
+                          choices=[3, 5, 8, 10, 12], default=10,
                           help='Delay between log fetches in seconds')
 
     return parser.parse_args()
@@ -75,7 +69,6 @@ def init_globals(args):
     global alerts
     global start
     global end
-    global max_alert_delta
     global fetch_delay
     global tracker
 
@@ -103,8 +96,6 @@ def init_globals(args):
         end = datetime.utcnow() - timedelta(seconds=fetch_delay)
         fetch_delay = args.fetch_delay
 
-    max_alert_delta = args.max_alert_delta
-
 
 def run_processes(steve_jobs):
     for job in steve_jobs:
@@ -119,7 +110,7 @@ if __name__ == '__main__':
     args = parse_arguments()
     init_globals(args)
 
-    print('[*] Starting K8sCop in %s mode' % analysis)
+    print(f'[*] Starting K8sCop in {analysis} mode')
     print('[+] Connected to ElasticSearch')
 
     try:
@@ -127,26 +118,26 @@ if __name__ == '__main__':
 
         push_queue_dict = {}
         push_queue_dict['Enum'] = Queue()
-        push_queue_dict['Integrity'] = Queue()
+        push_queue_dict['Tamper'] = Queue()
         push_queue_dict['Secrets'] = Queue()
-        push_queue_dict['RCE'] = Queue()
+        push_queue_dict['Exec'] = Queue()
 
         print('[*] Initialising fetcher, parser, pusher components')
         fetcher = Fetcher(es, pages, fetch_delay, fetch_queue, tracker)
         parser = Parser(fetch_queue, push_queue_dict, tracker)
 
-        pusher_enu = Pusher('Enum', es, alerts, max_alert_delta,
+        pusher_enu = Pusher('Enum', es, alerts,
                             push_queue_dict['Enum'], tracker)
-        pusher_int = Pusher('Integrity', es, alerts, max_alert_delta,
-                            push_queue_dict['Integrity'], tracker)
-        pusher_sec = Pusher('Secrets', es, alerts, max_alert_delta,
+        pusher_tam = Pusher('Tamper', es, alerts,
+                            push_queue_dict['Tamper'], tracker)
+        pusher_sec = Pusher('Secrets', es, alerts,
                             push_queue_dict['Secrets'], tracker)
-        pusher_rce = Pusher('RCE', es, alerts, max_alert_delta,
-                            push_queue_dict['RCE'], tracker)
+        pusher_rce = Pusher('Exec', es, alerts,
+                            push_queue_dict['Exec'], tracker)
         print('[+] Components initialised')
     except Exception as e:
         print('[!] Something went terribly wrong')
-        print('[-] %s' % e)
+        print(f'[-] {e}')
         exit(0)
 
     fetcher_t = Thread(target=fetcher.fetch, args=(start, end))
@@ -154,14 +145,14 @@ if __name__ == '__main__':
     parser_t = Thread(target=parser.parse)
 
     pusher_t1 = Thread(target=pusher_enu.push)
-    pusher_t2 = Thread(target=pusher_int.push)
+    pusher_t2 = Thread(target=pusher_tam.push)
     pusher_t3 = Thread(target=pusher_sec.push)
     pusher_t4 = Thread(target=pusher_rce.push)
 
     try:
         print('[*] Launching threads')
-        run_processes([fetcher_t, parser_t, pusher_t1, pusher_t2,
-                       pusher_t3, pusher_t4])
+        run_processes([fetcher_t, parser_t,
+                       pusher_t1, pusher_t2, pusher_t3, pusher_t4])
         print('[x] K8sCop is done')
     except KeyboardInterrupt:
         print('[!] K8sCop force quit')

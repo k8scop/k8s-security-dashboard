@@ -1,108 +1,77 @@
-# K8sCop Alert System
+# K8sCop
 
-_K8sCop fetches ElasticSearch k8s logs, parses the logs to detect specific patterns, and pushes new alerts back to ElasticSearch._
+_K8sCop fetches ElasticSearch k8s logs, parses the logs to detect and label interesting events, and pushes alerts back to ElasticSearch._
+
+## Introduction
+
+K8sCop is designed to make the analysis of Kubernetes audit logs easier.
+The system classifies logs into labelled events using regular expressions and provides more clarity about Kubernetes events. 
+K8sCop can perform a static analysis on a specific date range or streaming analysis in (almost) real time. It makes use of the Python Elasticsearch client and is multi-threaded for extra speed.
+
+## Usage
 
 ```
 $ ./app.py -h
-usage: app.py [-h] --elastic ip:port --page-index logs --alerts-index
-              alerts --start 2019-2-14-12-30-0 --max-alert-delta 600
-              --analysis {static,streaming} [--end 2019-2-14-18-30-0]
-              [--fetch-delay {5,10,12}]
+usage: app.py [-h] --elastic ES --pages PAGES --alerts ALERTS --start START
+              --analysis {static,streaming} [--end END]
+              [--fetch-delay {3,5,8,10,12}]
 ```
 
 - `-E`: the `ip:port` of the ElasticSearch instance
 - `-I`: the index of the logs page
 - `-i`: the index of the alerts page
 - `-s`: the desired start date and time of the analysis
-- `-D`: the maximum delta for alert aggregation in seconds
 - `-A`: set the analysis to static or streaming
 
-If the analyis is static, the end date and time of the analysis must be set:
+If the analysis is static, the end date and time of the analysis must be set:
 
 - `-e`: the end date and time of the **static** analysis [optional]
 
-If the analysis is streaming, a delay between log fetches must be set:
+If the end date and time is not given, the end date and time is automatically set to _utcnow_. 
+
+If the analysis is streaming, a delay between log fetches must be set, because of potential Elasticsearch latency:
 
 - `-d`: the delay between log fetches in seconds for **streaming** analysis [optional]
 
 ## Flow Diagram
 
-![](flow.png)
+![](k8scop.png)
 
 The Fetcher fetches data from ElasticSearch every `d` seconds and puts each entry into the Fetch Queue. 
-The Parser gets data from the Fetch Queue, parses each entry and does some magic pattern recognition. 
-If a pattern is matched, the entry is put in the Push Queue.
-The Pusher gets entries from the Push Queue and pushes the corresponding alert(s) back to ElasticSearch every second.
-The Pusher also takes care of alert aggregation: if the same alert has been seen in the last `D` seconds, the two alerts are aggregated. 
+The Parser gets data from the Fetch Queue, parses each entry and does regex pattern matching. 
+If a pattern is matched, an alert specifc to the pattern is put in the Push Queue.
+The Pusher gets alerts from the Push Queue and pushes them back to ElasticSearch every second.
 
-## Static Analysis
+In this implementation of K8sCop, there are multiple push queues and associated pushers running on separate threads for the different types of alerts. 
 
-```
-$ ./app.py -E 192.168.43.139:9200 -I logstash-2019.02.12 -i alerts -s 2019-2-12-19-30-0 
-           -D 600 --analysis static -e 2019-2-12-19-45-0
-[*] Starting K8sCop in static mode
-[+] Connected to ElasticSearch
-[*] Initialising fetcher, parser, pusher components
-[+] Components initialised
-[*] Launching threads
-[*] Log data between 2019-02-12 19:30:00 and 2019-02-12 19:45:00
-[+] Fetcher is done
-[+] Parser is done
-[++] [Command execution by kubernetes-admin on kube-apiserver] TPet52gBWERuYKu0jv0l
-[+=] Updated alert TPet52gBWERuYKu0jv0l
-[+=] Updated alert TPet52gBWERuYKu0jv0l
-[+=] Updated alert TPet52gBWERuYKu0jv0l
-[+=] Updated alert TPet52gBWERuYKu0jv0l
-[+=] Updated alert TPet52gBWERuYKu0jv0l
-[+=] Updated alert TPet52gBWERuYKu0jv0l
-[+=] Updated alert TPet52gBWERuYKu0jv0l
-[+=] Updated alert TPet52gBWERuYKu0jv0l
-[+] Pusher is done
-[+] K8sCop is done
-```
 
-## Streaming Analysis
+## Example How-to-Run
+
+### Static Analysis
 
 ```
-$ ./app.py -E 192.168.43.139:9200 -I logstash-2019.02.12 -i alerts -s 2019-2-12-19-30-0 
-           -D 600 --analysis streaming                  
-[*] Starting K8sCop in streaming mode
-[+] Connected to ElasticSearch
-[*] Initialising fetcher, parser, pusher components
-[+] Components initialised
-[*] Launching threads
-[*] Log data between 2019-02-12 19:30:00 and 2019-02-13 16:40:21.854368
-[+] Amount of data fetched: 487
-[++] [Command execution by kubernetes-admin on kube-apiserver] L_eu52gBWERuYKu0mf4_
-[+=] Updated alert L_eu52gBWERuYKu0mf4_
-[+=] Updated alert L_eu52gBWERuYKu0mf4_
-[+=] Updated alert L_eu52gBWERuYKu0mf4_
-[+=] Updated alert L_eu52gBWERuYKu0mf4_
-[+=] Updated alert L_eu52gBWERuYKu0mf4_
-[+=] Updated alert L_eu52gBWERuYKu0mf4_
-[+=] Updated alert L_eu52gBWERuYKu0mf4_
-[+=] Updated alert L_eu52gBWERuYKu0mf4_
-[+=] Updated alert L_eu52gBWERuYKu0mf4_
-[*] Log data between 2019-02-13 16:40:21.854368 and 2019-02-13 16:40:31.854368
-[+] Amount of data fetched: 0
-[+=] Updated alert L_eu52gBWERuYKu0mf4_
-[+=] Updated alert L_eu52gBWERuYKu0mf4_
-[+=] Updated alert L_eu52gBWERuYKu0mf4_
-[+=] Updated alert L_eu52gBWERuYKu0mf4_
-[+=] Updated alert L_eu52gBWERuYKu0mf4_
-[+=] Updated alert L_eu52gBWERuYKu0mf4_
-[+=] Updated alert L_eu52gBWERuYKu0mf4_
-[+=] Updated alert L_eu52gBWERuYKu0mf4_
-[+=] Updated alert L_eu52gBWERuYKu0mf4_
-[*] Log data between 2019-02-13 16:40:31.854368 and 2019-02-13 16:40:41.854368
-[+] Amount of data fetched: 0
-[+=] Updated alert L_eu52gBWERuYKu0mf4_
-[+=] Updated alert L_eu52gBWERuYKu0mf4_
-[*] Log data between 2019-02-13 16:40:41.854368 and 2019-02-13 16:40:51.854368
-[+] Amount of data fetched: 0
-^C[!] K8sCop force quit
+$ ./app.py -E 172.16.137.133:9200 -I logstash -i alerts -s 2019-2-1-0-0-0 
+           -e 2019-3-2-0-0-0 --analysis static
 ```
 
-## Important
+### Streaming Analysis
+
+```
+$ ./app.py -E 172.16.137.133:9200 -I logstash -i alerts -s 2019-2-1-0-0-0 
+           --analysis streaming   
+```
+
+### Important
 
 Time must be given in UTC format. 
+
+## Sample from Kibana
+
+![](alerts.png)
+
+## Future Work
+
+- Create an interface for adding new rules
+- Correlate multiple events to detect more complex attacks
+- Integrate triggers
+- Make K8sCop interact with Kubernetes itself
