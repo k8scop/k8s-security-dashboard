@@ -33,9 +33,16 @@ If the analysis is streaming, a delay between log fetches must be set, because o
 
 - `-d`: the delay between log fetches in seconds for **streaming** analysis [optional]
 
+## Elasticsearch Indices
+
+In our current logging architecture, logs get stored into Elasticsearch under an index with prefix _logstash_ and the date of the log prepended, like `logstash-2019.03.02`. 
+K8sCop receives the prefix of the logs page as parameter and does the appending of the date on its own. 
+
+For storing the alert, K8sCop receives the desired prefix for the alerts page and does the appending of the date by looking at the timestamp of the alert. 
+
 ## Flow Diagram
 
-![](k8scop.png)
+![](images/k8scop.png)
 
 The Fetcher fetches data from ElasticSearch every `d` seconds and puts each entry into the Fetch Queue. 
 The Parser gets data from the Fetch Queue, parses each entry and does regex pattern matching. 
@@ -65,12 +72,31 @@ $ ./app.py -E 172.16.137.133:9200 -I logstash -i alerts -s 2019-2-1-0-0-0
 
 Time must be given in UTC format. 
 
+## Mapping RequestURI to Kubectl command
+
+Part of this mapping is used for regex detection in the logs. 
+
+|API|kubectl|comment|
+|---|-------|-------|
+|/api/v1/pods|get pods --all-namespaces||
+|/api/v1/namespaces/kube-system/pods|get pods --namespace kube-system||
+|/api/v1/namespaces/default/pods/busybox-test|describe busybox-test --namespace default||
+|/api/v1/namespaces/default/pods/unsafe-space|describe pods unsafe-space --namespace default||
+|/api/v1/pods?includeUninitialized=true|describe pods --all-namespaces||
+|/api/v1/namespaces/default/secrets?includeUninitialized=true| Followed by multiple token queries|
+|/api/v1/namespaces/default/secrets/exec-token-qjp9l|get secret details||
+|/api/v1/namespaces/default/pods|create -f <pod>| Method create|
+|/api/v1/services?limit=500|get svc --all-namespaces||
+|/apis/extensions/v1beta1/daemonsets |get ds --all-namespaces||
+|/apis/extensions/v1beta1/namespaces/kube-system/daemonsets|get ds --namespace kube-system||
+
 ## Sample from Kibana
 
-![](alerts.png)
+![](images/alerts.png)
 
 ## Future Work
 
+- Turn K8sCop into a system daemon
 - Create an interface for adding new rules
 - Correlate multiple events to detect more complex attacks
 - Integrate triggers

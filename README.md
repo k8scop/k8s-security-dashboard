@@ -5,10 +5,12 @@
 - [Kubernetes Security Dashboard](#kubernetes-security-dashboard)
   - [Installation](#installation)
     - [kube-apiserver arguments](#kube-apiserver-arguments)
+    - [Setting up Elasticsearch and Kibana](#setting-up-elasticsearch-and-kibana)
     - [Deploying fluent](#deploying-fluent)
       - [Preparation](#preparation)
+      - [Deployment](#deployment)
     - [Debugging](#debugging)
-  - [Mapping kubectl commands API endpoints](#mapping-kubectl-commands-api-endpoints)
+  - [Importing the Dashboard](#importing-the-dashboard)
 
 <!-- vim-markdown-toc -->
 
@@ -45,6 +47,10 @@ containers:
 ```
 
 An example configuration file can be found in `configs/kubernetes/kube-apiserver.yaml`.
+
+### Setting up Elasticsearch and Kibana
+
+This very nice and detailed guide on [DigitalOcean](https://www.digitalocean.com/community/tutorials/how-to-install-elasticsearch-logstash-and-kibana-elastic-stack-on-ubuntu-16-04). 
 
 ### Deploying fluent
 
@@ -85,13 +91,15 @@ Change the environment variables to connect to the installed elasticsearch insta
         resources:
 ```
 
+#### Deployment
+
 Apply the yaml configuration file:
 
 ```bash
 $ kubectl apply -f fluentd-setup.yml
 ```
 
-There should be a `kube-logging` namespace, containing a volume(claim), a fluent pod and service account.
+There should be a `kube-logging` namespace, containing a volume (claim), a fluent pod and service account.
 
 ### Debugging 
 
@@ -104,18 +112,8 @@ $ kubectl --namespace kube-logging logs fluent-[identifier] init-fluentd -f
 This will stream the init containers' stdout/stderr while installing the required gems.
 Omit `init-fluentd` to stream the logs of the actual container.
 
-## Mapping kubectl commands API endpoints
+## Importing the Dashboard
 
-|API|kubectl|comment|
-|---|-------|-------|
-|/api/v1/pods|get pods --all-namespaces||
-|/api/v1/namespaces/kube-system/pods|get pods --namespace kube-system||
-|/api/v1/namespaces/default/pods/busybox-test|describe busybox-test --namespace default||
-|/api/v1/namespaces/default/pods/unsafe-space|describe pods unsafe-space --namespace default||
-|/api/v1/pods?includeUninitialized=true|describe pods --all-namespaces||
-|/api/v1/namespaces/default/secrets?includeUninitialized=true| Followed by multiple token queries|
-|/api/v1/namespaces/default/secrets/exec-token-qjp9l|get secret details||
-|/api/v1/namespaces/default/pods|create -f <pod>| Method create|
-|/api/v1/services?limit=500|get svc --all-namespaces||
-|/apis/extensions/v1beta1/daemonsets |get ds --all-namespaces||
-|/apis/extensions/v1beta1/namespaces/kube-system/daemonsets|get ds --namespace kube-system||
+- Navigate to your management interface of Kibana
+- Go into Saved Objects
+- Import the json objects [file](/home/notvalery/Documents/projects/kubernetes-dashboard/configs/kibana/k8s-security-dashboard.json) 

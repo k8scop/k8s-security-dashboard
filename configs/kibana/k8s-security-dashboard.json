@@ -1,0 +1,184 @@
+[
+  {
+    "_id": "6e2bada0-3831-11e9-a558-b124872309be",
+    "_type": "dashboard",
+    "_source": {
+      "title": "K8s Security Dashboard",
+      "hits": 0,
+      "description": "",
+      "panelsJSON": "[{\"embeddableConfig\":{},\"gridData\":{\"x\":0,\"y\":30,\"w\":24,\"h\":15,\"i\":\"3\"},\"id\":\"63e223f0-3873-11e9-9eb1-cd7f7bca629f\",\"panelIndex\":\"3\",\"type\":\"visualization\",\"version\":\"6.5.4\"},{\"embeddableConfig\":{},\"gridData\":{\"x\":24,\"y\":30,\"w\":24,\"h\":15,\"i\":\"4\"},\"id\":\"a1c29f20-38ea-11e9-a14c-29804df10ca1\",\"panelIndex\":\"4\",\"type\":\"visualization\",\"version\":\"6.5.4\"},{\"embeddableConfig\":{},\"gridData\":{\"x\":0,\"y\":45,\"w\":24,\"h\":15,\"i\":\"5\"},\"id\":\"4eb65400-38ec-11e9-a14c-29804df10ca1\",\"panelIndex\":\"5\",\"type\":\"visualization\",\"version\":\"6.5.4\"},{\"embeddableConfig\":{},\"gridData\":{\"x\":0,\"y\":0,\"w\":24,\"h\":15,\"i\":\"7\"},\"id\":\"02642020-3831-11e9-a558-b124872309be\",\"panelIndex\":\"7\",\"type\":\"search\",\"version\":\"6.5.4\"},{\"embeddableConfig\":{\"vis\":{\"colors\":{\"kubernetes-admin\":\"#BF1B00\",\"system:serviceaccount:kube-logging:fluentd\":\"#7EB26D\"},\"legendOpen\":true}},\"gridData\":{\"x\":0,\"y\":15,\"w\":24,\"h\":15,\"i\":\"9\"},\"id\":\"78890010-3834-11e9-a558-b124872309be\",\"panelIndex\":\"9\",\"type\":\"visualization\",\"version\":\"6.5.4\"},{\"embeddableConfig\":{\"columns\":[\"annotations.authorization.k8s.io/reason\",\"user.username\",\"objectRef.name\",\"objectRef.namespace\",\"objectRef.resource\",\"sourceIPs\"]},\"gridData\":{\"x\":24,\"y\":45,\"w\":24,\"h\":15,\"i\":\"10\"},\"id\":\"d2361540-39be-11e9-a8ae-dd108b521fa1\",\"panelIndex\":\"10\",\"type\":\"search\",\"version\":\"6.5.4\"},{\"embeddableConfig\":{\"columns\":[\"annotations.authorization.k8s.io/decision\",\"objectRef.name\",\"user.username\",\"objectRef.namespace\",\"verb\",\"sourceIPs\"]},\"gridData\":{\"x\":0,\"y\":60,\"w\":24,\"h\":15,\"i\":\"11\"},\"id\":\"0fe24b60-39c5-11e9-a8ae-dd108b521fa1\",\"panelIndex\":\"11\",\"type\":\"search\",\"version\":\"6.5.4\"},{\"gridData\":{\"x\":24,\"y\":15,\"w\":24,\"h\":15,\"i\":\"12\"},\"version\":\"6.5.4\",\"panelIndex\":\"12\",\"type\":\"search\",\"id\":\"d8aad670-384e-11e9-a558-b124872309be\",\"embeddableConfig\":{}},{\"gridData\":{\"x\":24,\"y\":0,\"w\":24,\"h\":15,\"i\":\"13\"},\"version\":\"6.5.4\",\"panelIndex\":\"13\",\"type\":\"visualization\",\"id\":\"0b0b6630-3bfa-11e9-a685-9b394f399fe8\",\"embeddableConfig\":{}}]",
+      "optionsJSON": "{\"darkTheme\":true,\"hidePanelTitles\":false,\"useMargins\":true}",
+      "version": 1,
+      "timeRestore": false,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"query\":{\"language\":\"lucene\",\"query\":\"\"},\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "02642020-3831-11e9-a558-b124872309be",
+    "_type": "search",
+    "_source": {
+      "title": "All Requests",
+      "description": "",
+      "hits": 0,
+      "columns": [
+        "user.username",
+        "requestURI",
+        "userAgent",
+        "verb"
+      ],
+      "sort": [
+        "@timestamp",
+        "desc"
+      ],
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"7ef6d3f0-2ee3-11e9-8d7e-093be2e621bf\",\"highlightAll\":true,\"version\":true,\"query\":{\"language\":\"lucene\",\"query\":\"\"},\"filter\":[{\"$state\":{\"store\":\"appState\"},\"exists\":{\"field\":\"user.username\"},\"meta\":{\"alias\":null,\"disabled\":false,\"index\":\"7ef6d3f0-2ee3-11e9-8d7e-093be2e621bf\",\"key\":\"user.username\",\"negate\":false,\"type\":\"exists\",\"value\":\"exists\"}}]}"
+      }
+    }
+  },
+  {
+    "_id": "d2361540-39be-11e9-a8ae-dd108b521fa1",
+    "_type": "search",
+    "_source": {
+      "title": "Unauthorized Requests",
+      "description": "",
+      "hits": 0,
+      "columns": [
+        "annotations.authorization.k8s.io/reason",
+        "objectRef.namespace",
+        "objectRef.resource",
+        "objectRef.name",
+        "user.username",
+        "sourceIPs"
+      ],
+      "sort": [
+        "@timestamp",
+        "desc"
+      ],
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"7ef6d3f0-2ee3-11e9-8d7e-093be2e621bf\",\"highlightAll\":true,\"version\":true,\"query\":{\"language\":\"lucene\",\"query\":\"\"},\"filter\":[{\"$state\":{\"store\":\"appState\"},\"meta\":{\"alias\":null,\"disabled\":false,\"index\":\"7ef6d3f0-2ee3-11e9-8d7e-093be2e621bf\",\"key\":\"annotations.authorization.k8s.io/decision\",\"negate\":false,\"params\":{\"query\":\"forbid\",\"type\":\"phrase\"},\"type\":\"phrase\",\"value\":\"forbid\"},\"query\":{\"match\":{\"annotations.authorization.k8s.io/decision\":{\"query\":\"forbid\",\"type\":\"phrase\"}}}}]}"
+      }
+    }
+  },
+  {
+    "_id": "d8aad670-384e-11e9-a558-b124872309be",
+    "_type": "search",
+    "_source": {
+      "title": "All Alerts",
+      "description": "",
+      "hits": 0,
+      "columns": [
+        "description",
+        "user",
+        "namespace",
+        "pod"
+      ],
+      "sort": [
+        "timestamp",
+        "desc"
+      ],
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"a9d0c750-3872-11e9-9eb1-cd7f7bca629f\",\"highlightAll\":true,\"version\":true,\"query\":{\"language\":\"kuery\",\"query\":\"\"},\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "0fe24b60-39c5-11e9-a8ae-dd108b521fa1",
+    "_type": "search",
+    "_source": {
+      "title": "Privileged Mode ",
+      "description": "",
+      "hits": 0,
+      "columns": [
+        "annotations.authorization.k8s.io/decision",
+        "objectRef.name",
+        "objectRef.namespace",
+        "user.username",
+        "sourceIPs",
+        "verb"
+      ],
+      "sort": [
+        "@timestamp",
+        "desc"
+      ],
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"7ef6d3f0-2ee3-11e9-8d7e-093be2e621bf\",\"highlightAll\":true,\"version\":true,\"query\":{\"language\":\"lucene\",\"query\":\"\\\"privileged\\\\\\\":true}\\\"\"},\"filter\":[{\"$state\":{\"store\":\"appState\"},\"meta\":{\"alias\":null,\"disabled\":false,\"index\":\"7ef6d3f0-2ee3-11e9-8d7e-093be2e621bf\",\"key\":\"verb\",\"negate\":false,\"params\":{\"query\":\"create\",\"type\":\"phrase\"},\"type\":\"phrase\",\"value\":\"create\"},\"query\":{\"match\":{\"verb\":{\"query\":\"create\",\"type\":\"phrase\"}}}},{\"meta\":{\"index\":\"7ef6d3f0-2ee3-11e9-8d7e-093be2e621bf\",\"negate\":false,\"disabled\":false,\"alias\":null,\"type\":\"phrase\",\"key\":\"annotations.authorization.k8s.io/decision\",\"value\":\"allow\",\"params\":{\"query\":\"allow\",\"type\":\"phrase\"}},\"query\":{\"match\":{\"annotations.authorization.k8s.io/decision\":{\"query\":\"allow\",\"type\":\"phrase\"}}},\"$state\":{\"store\":\"appState\"}}]}"
+      }
+    }
+  },
+  {
+    "_id": "78890010-3834-11e9-a558-b124872309be",
+    "_type": "visualization",
+    "_source": {
+      "title": "User Activity",
+      "visState": "{\"title\":\"User Activity\",\"type\":\"pie\",\"params\":{\"type\":\"pie\",\"addTooltip\":true,\"addLegend\":true,\"legendPosition\":\"top\",\"isDonut\":true,\"labels\":{\"show\":true,\"values\":false,\"last_level\":false,\"truncate\":9999}},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"schema\":\"metric\",\"params\":{}},{\"id\":\"2\",\"enabled\":true,\"type\":\"terms\",\"schema\":\"segment\",\"params\":{\"field\":\"user.username.keyword\",\"size\":5,\"order\":\"desc\",\"orderBy\":\"1\",\"otherBucket\":false,\"otherBucketLabel\":\"Other\",\"missingBucket\":false,\"missingBucketLabel\":\"Missing\",\"customLabel\":\"Useraccount\"}}]}",
+      "uiStateJSON": "{\"vis\":{\"legendOpen\":true}}",
+      "description": "",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"7ef6d3f0-2ee3-11e9-8d7e-093be2e621bf\",\"query\":{\"query\":\"\",\"language\":\"kuery\"},\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "63e223f0-3873-11e9-9eb1-cd7f7bca629f",
+    "_type": "visualization",
+    "_source": {
+      "title": "Command Execution",
+      "visState": "{\"title\":\"Command Execution\",\"type\":\"table\",\"params\":{\"perPage\":10,\"showPartialRows\":false,\"showMetricsAtAllLevels\":false,\"sort\":{\"columnIndex\":3,\"direction\":null},\"showTotal\":false,\"totalFunc\":\"sum\"},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"schema\":\"metric\",\"params\":{}},{\"id\":\"7\",\"enabled\":true,\"type\":\"terms\",\"schema\":\"bucket\",\"params\":{\"field\":\"user.keyword\",\"size\":5,\"order\":\"desc\",\"orderBy\":\"1\",\"otherBucket\":false,\"otherBucketLabel\":\"Other\",\"missingBucket\":false,\"missingBucketLabel\":\"Missing\",\"customLabel\":\"User\"}},{\"id\":\"2\",\"enabled\":true,\"type\":\"terms\",\"schema\":\"bucket\",\"params\":{\"field\":\"command.keyword\",\"size\":5,\"order\":\"desc\",\"orderBy\":\"1\",\"otherBucket\":false,\"otherBucketLabel\":\"Other\",\"missingBucket\":false,\"missingBucketLabel\":\"Missing\",\"customLabel\":\"Command\"}},{\"id\":\"4\",\"enabled\":true,\"type\":\"terms\",\"schema\":\"bucket\",\"params\":{\"field\":\"namespace.keyword\",\"size\":5,\"order\":\"desc\",\"orderBy\":\"1\",\"otherBucket\":false,\"otherBucketLabel\":\"Other\",\"missingBucket\":false,\"missingBucketLabel\":\"Missing\",\"customLabel\":\"Namespace\"}},{\"id\":\"5\",\"enabled\":true,\"type\":\"terms\",\"schema\":\"bucket\",\"params\":{\"field\":\"pod.keyword\",\"size\":5,\"order\":\"desc\",\"orderBy\":\"1\",\"otherBucket\":false,\"otherBucketLabel\":\"Other\",\"missingBucket\":false,\"missingBucketLabel\":\"Missing\",\"customLabel\":\"Pod\"}},{\"id\":\"3\",\"enabled\":true,\"type\":\"terms\",\"schema\":\"bucket\",\"params\":{\"field\":\"container.keyword\",\"size\":5,\"order\":\"desc\",\"orderBy\":\"1\",\"otherBucket\":false,\"otherBucketLabel\":\"Other\",\"missingBucket\":false,\"missingBucketLabel\":\"Missing\",\"customLabel\":\"Container\"}}]}",
+      "uiStateJSON": "{\"vis\":{\"params\":{\"sort\":{\"columnIndex\":3,\"direction\":null}}}}",
+      "description": "",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"a9d0c750-3872-11e9-9eb1-cd7f7bca629f\",\"query\":{\"language\":\"lucene\",\"query\":\"\"},\"filter\":[{\"meta\":{\"index\":\"a9d0c750-3872-11e9-9eb1-cd7f7bca629f\",\"negate\":false,\"disabled\":false,\"alias\":null,\"type\":\"phrase\",\"key\":\"a_type\",\"value\":\"Exec\",\"params\":{\"query\":\"Exec\",\"type\":\"phrase\"}},\"query\":{\"match\":{\"a_type\":{\"query\":\"Exec\",\"type\":\"phrase\"}}},\"$state\":{\"store\":\"appState\"}}]}"
+      }
+    }
+  },
+  {
+    "_id": "a1c29f20-38ea-11e9-a14c-29804df10ca1",
+    "_type": "visualization",
+    "_source": {
+      "title": "Kubectl Commands",
+      "visState": "{\"title\":\"Kubectl Commands\",\"type\":\"table\",\"params\":{\"perPage\":10,\"showPartialRows\":false,\"showMetricsAtAllLevels\":false,\"sort\":{\"columnIndex\":null,\"direction\":null},\"showTotal\":false,\"totalFunc\":\"sum\"},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"schema\":\"metric\",\"params\":{}},{\"id\":\"2\",\"enabled\":true,\"type\":\"terms\",\"schema\":\"bucket\",\"params\":{\"field\":\"user.keyword\",\"size\":5,\"order\":\"desc\",\"orderBy\":\"1\",\"otherBucket\":false,\"otherBucketLabel\":\"Other\",\"missingBucket\":false,\"missingBucketLabel\":\"Missing\",\"customLabel\":\"User\"}},{\"id\":\"3\",\"enabled\":true,\"type\":\"terms\",\"schema\":\"bucket\",\"params\":{\"field\":\"kubectl.keyword\",\"size\":5,\"order\":\"desc\",\"orderBy\":\"1\",\"otherBucket\":false,\"otherBucketLabel\":\"Other\",\"missingBucket\":false,\"missingBucketLabel\":\"Missing\",\"customLabel\":\"Kubectl Command\"}}]}",
+      "uiStateJSON": "{\"vis\":{\"params\":{\"sort\":{\"columnIndex\":null,\"direction\":null}}}}",
+      "description": "",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"a9d0c750-3872-11e9-9eb1-cd7f7bca629f\",\"query\":{\"query\":\"\",\"language\":\"lucene\"},\"filter\":[{\"meta\":{\"index\":\"a9d0c750-3872-11e9-9eb1-cd7f7bca629f\",\"negate\":false,\"disabled\":false,\"alias\":null,\"type\":\"phrase\",\"key\":\"a_type.keyword\",\"value\":\"Enum\",\"params\":{\"query\":\"Enum\",\"type\":\"phrase\"}},\"query\":{\"match\":{\"a_type.keyword\":{\"query\":\"Enum\",\"type\":\"phrase\"}}},\"$state\":{\"store\":\"appState\"}}]}"
+      }
+    }
+  },
+  {
+    "_id": "4eb65400-38ec-11e9-a14c-29804df10ca1",
+    "_type": "visualization",
+    "_source": {
+      "title": "Secrets Retrievals",
+      "visState": "{\"title\":\"Secrets Retrievals\",\"type\":\"table\",\"params\":{\"perPage\":10,\"showPartialRows\":false,\"showMetricsAtAllLevels\":false,\"sort\":{\"columnIndex\":null,\"direction\":null},\"showTotal\":false,\"totalFunc\":\"sum\"},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"schema\":\"metric\",\"params\":{}},{\"id\":\"4\",\"enabled\":true,\"type\":\"terms\",\"schema\":\"bucket\",\"params\":{\"field\":\"user.keyword\",\"size\":5,\"order\":\"desc\",\"orderBy\":\"1\",\"otherBucket\":false,\"otherBucketLabel\":\"Other\",\"missingBucket\":false,\"missingBucketLabel\":\"Missing\",\"customLabel\":\"User\"}},{\"id\":\"2\",\"enabled\":true,\"type\":\"terms\",\"schema\":\"bucket\",\"params\":{\"field\":\"description.keyword\",\"size\":5,\"order\":\"desc\",\"orderBy\":\"1\",\"otherBucket\":false,\"otherBucketLabel\":\"Other\",\"missingBucket\":false,\"missingBucketLabel\":\"Missing\",\"customLabel\":\"Alert\"}},{\"id\":\"5\",\"enabled\":true,\"type\":\"terms\",\"schema\":\"bucket\",\"params\":{\"field\":\"namespace.keyword\",\"size\":5,\"order\":\"desc\",\"orderBy\":\"1\",\"otherBucket\":false,\"otherBucketLabel\":\"Other\",\"missingBucket\":false,\"missingBucketLabel\":\"Missing\",\"customLabel\":\"Namespace\"}},{\"id\":\"6\",\"enabled\":true,\"type\":\"terms\",\"schema\":\"bucket\",\"params\":{\"field\":\"pod.keyword\",\"size\":5,\"order\":\"desc\",\"orderBy\":\"1\",\"otherBucket\":false,\"otherBucketLabel\":\"Other\",\"missingBucket\":false,\"missingBucketLabel\":\"Missing\",\"customLabel\":\"Pod\"}},{\"id\":\"3\",\"enabled\":true,\"type\":\"terms\",\"schema\":\"bucket\",\"params\":{\"field\":\"response\",\"size\":5,\"order\":\"desc\",\"orderBy\":\"1\",\"otherBucket\":false,\"otherBucketLabel\":\"Other\",\"missingBucket\":false,\"missingBucketLabel\":\"Missing\",\"customLabel\":\"Response\"}}]}",
+      "uiStateJSON": "{\"vis\":{\"params\":{\"sort\":{\"columnIndex\":null,\"direction\":null}}}}",
+      "description": "",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"a9d0c750-3872-11e9-9eb1-cd7f7bca629f\",\"query\":{\"query\":\"\",\"language\":\"lucene\"},\"filter\":[{\"meta\":{\"index\":\"a9d0c750-3872-11e9-9eb1-cd7f7bca629f\",\"negate\":false,\"disabled\":false,\"alias\":null,\"type\":\"phrase\",\"key\":\"a_type.keyword\",\"value\":\"Secrets\",\"params\":{\"query\":\"Secrets\",\"type\":\"phrase\"}},\"query\":{\"match\":{\"a_type.keyword\":{\"query\":\"Secrets\",\"type\":\"phrase\"}}},\"$state\":{\"store\":\"appState\"}}]}"
+      }
+    }
+  },
+  {
+    "_id": "0b0b6630-3bfa-11e9-a685-9b394f399fe8",
+    "_type": "visualization",
+    "_source": {
+      "title": "Alert Types",
+      "visState": "{\"title\":\"Alert Types\",\"type\":\"pie\",\"params\":{\"type\":\"pie\",\"addTooltip\":true,\"addLegend\":true,\"legendPosition\":\"right\",\"isDonut\":true,\"labels\":{\"show\":false,\"values\":true,\"last_level\":true,\"truncate\":100}},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"schema\":\"metric\",\"params\":{}},{\"id\":\"2\",\"enabled\":true,\"type\":\"terms\",\"schema\":\"segment\",\"params\":{\"field\":\"a_type.keyword\",\"size\":5,\"order\":\"desc\",\"orderBy\":\"1\",\"otherBucket\":false,\"otherBucketLabel\":\"Other\",\"missingBucket\":false,\"missingBucketLabel\":\"Missing\",\"customLabel\":\"Alert Types\"}}]}",
+      "uiStateJSON": "{}",
+      "description": "",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"a9d0c750-3872-11e9-9eb1-cd7f7bca629f\",\"query\":{\"query\":\"\",\"language\":\"lucene\"},\"filter\":[]}"
+      }
+    }
+  }
+]
