@@ -56,7 +56,7 @@ def parse_arguments():
                           help='End date and time yyyy-m-d-h-s or now')
 
     optional.add_argument('--fetch-delay', '-d', dest='fetch_delay', type=int,
-                          choices=[5, 10, 12], default=10,
+                          choices=[3, 5, 8, 10, 12], default=10,
                           help='Delay between log fetches in seconds')
 
     return parser.parse_args()
@@ -110,7 +110,7 @@ if __name__ == '__main__':
     args = parse_arguments()
     init_globals(args)
 
-    print('[*] Starting K8sCop in %s mode' % analysis)
+    print(f'[*] Starting K8sCop in {analysis} mode')
     print('[+] Connected to ElasticSearch')
 
     try:
@@ -137,7 +137,7 @@ if __name__ == '__main__':
         print('[+] Components initialised')
     except Exception as e:
         print('[!] Something went terribly wrong')
-        print('[-] %s' % e)
+        print(f'[-] {e}')
         exit(0)
 
     fetcher_t = Thread(target=fetcher.fetch, args=(start, end))

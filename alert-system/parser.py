@@ -1,15 +1,16 @@
 from re import search as regsearch
 from urllib.parse import unquote
 
-from alert import RCEAlert, EnumAlert, TamperAlert, SecretsAlert
+from alert import EnumAlert, TamperAlert, SecretsAlert, ExecAlert
 
-pods_limit = r'^/api/v\d+/pods\?limit=\d+$'
-namespaces_n_pods = r'^/api/v\d+/namespaces/[\w\d_-]+/pods$'
+pods_limit = r'^/api/v\d+/pods(\?limit=\d+)?$'
+namespaces_n_pods = r'^/api/v\d+/namespaces/[\w\d_-]+/pods(\?limit=\d+)?$'
 pods_include = r'^/api/v\d+/pods\?includeUninitialized=true$'
+namespace_n_pods_include = r'^/api/v\d+/namespaces/[\w\d_-]+/pods\?includeUninitialized=true$'
 namespaces_n_pods_p = r'^/api/v\d+/namespaces/[\w\d_-]+/pods/[\w\d_-]+$'
-secrets_limit = r'^/api/v\d+/secrets\?limit=\d+$'
-namespaces_n_secrets_limit = r'^/api/v\d+/namespaces/[\w\d_-]+/secrets\?limit=\d$'
-namespaces_n_secrets_p = r'/api/v\d+/namespaces/[\w\d_-]+/secrets/[\w\d_-]+$'
+secrets_limit = r'^/api/v\d+/secrets(\?limit=\d)?$'
+namespaces_n_secrets_limit = r'^/api/v\d+/namespaces/[\w\d_-]+/secrets(\?limit=\d+)?$'
+namespaces_n_secrets_p = r'/^api/v\d+/namespaces/[\w\d_-]+/secrets/[\w\d_-]+$'
 namespaces_n_pods_p_exec = r'^/api/v\d+/namespaces/[\w\d_-]+/pods/[\w\d_-]+/exec?'
 
 
@@ -44,12 +45,20 @@ class Parser:
 
         timestamp = source['@timestamp']
         uri = source['requestURI']
-        user = source['user']['username']
         method = source['verb']
+
+        user = ''
+        if 'username' in source['user']:
+            user = source['user']['username']
 
         response = 0
         if 'responseStatus' in source:
             response = source['responseStatus']['code']
+
+        pod = 'N/A'
+        if 'objectRef' in source:
+            if 'name' in source['objectRef']:
+                pod = source['objectRef']['name']
 
         alert = None
 
@@ -57,9 +66,12 @@ class Parser:
             alert = self.__find_pods_limit(timestamp, index, user)
         elif regsearch(namespaces_n_pods, uri):
             alert = self.__find_namespace_n_pods(timestamp, index, user,
-                                                 uri, method, response)
+                                                 uri, method, response, pod)
         elif regsearch(pods_include, uri):
             alert = self.__find_pods_include(timestamp, index, user)
+        elif regsearch(namespace_n_pods_include, uri):
+            alert = self.__find_namespace_n_pods_include(timestamp, index,
+                                                         user, uri)
         elif regsearch(namespaces_n_pods_p, uri):
             alert = self.__find_namespaces_n_pods_p(timestamp, index, user,
                                                     uri, method, response)
@@ -67,7 +79,7 @@ class Parser:
             alert = self.__find_secrets_limit(timestamp, index, user, response)
         elif regsearch(namespaces_n_secrets_limit, uri):
             alert = self.__find_namespaces_n_secrets_limit(timestamp, index,
-                                                           uri, user, response)
+                                                           user, uri, response)
         elif regsearch(namespaces_n_secrets_p, uri):
             alert = self.__find_namespaces_n_secrets_p(timestamp, index, user,
                                                        uri, response)
@@ -79,7 +91,7 @@ class Parser:
             self.push_queue_dict[alert.a_type].put(alert)
 
     def __find_pods_limit(self, timestamp, index, user):
-        description = 'Pod enumeration on all namespaces'
+        description = 'Pod enumeration in all namespaces'
 
         kubectl = 'get pods --all-namespaces'
 
@@ -87,32 +99,39 @@ class Parser:
                          'N/A', 'N/A', kubectl)
 
     def __find_namespace_n_pods(self, timestamp, index, user,
-                                uri, method, response):
+                                uri, method, response, pod):
         namespace = self.__find_namespace(uri)
 
-        if method == 'get':
-            description = f'Pod enumeration on namespace {namespace}'
+        if method == 'list':
+            if response == 200:
+                description = f'Pod enumeration in namespace {namespace}'
 
-            kubectl = f'get pods --namespace {namespace}'
+                kubectl = f'get pods --namespace {namespace}'
 
-            return EnumAlert(timestamp, description, index, user,
-                             namespace, 'N/A', kubectl)
+                return EnumAlert(timestamp, description, index, user,
+                                 namespace, 'N/A', kubectl)
         elif method == 'create':
             if response == 201:
                 description = f'{user} created pod in {namespace}'
-                # pod = source['objectRef']['name']
-                pod = 'N/A'
-                print('meow')
 
                 return TamperAlert(timestamp, description, index, user,
                                    namespace, pod)
 
     def __find_pods_include(self, timestamp, index, user):
-        description = 'Describe pods request on all namespaces'
+        description = 'Pod information request in all namespaces'
         kubectl = 'describe pods --all-namespaces'
 
         return EnumAlert(timestamp, description, index, user,
                          'N/A', 'N/A', kubectl)
+
+    def __find_namespace_n_pods_include(self, timestamp, index, user, uri):
+        namespace = self.__find_namespace(uri)
+        description = f'Pod information request in namespace {namespace}'
+
+        kubectl = f'describe pods --namespace {namespace}'
+
+        return EnumAlert(timestamp, description, index, user,
+                         namespace, 'N/A', kubectl)
 
     def __find_namespaces_n_pods_p(self, timestamp, index, user,
                                    uri, method, response):
@@ -129,7 +148,7 @@ class Parser:
                 return TamperAlert(timestamp, description, index, user,
                                    namespace, pod)
         else:
-            description = f'Describe request on {pod} in {namespace}'
+            description = f'Information request on {pod} in {namespace}'
 
             kubectl = f'describe {pod} --namespace {namespace}'
 
@@ -174,8 +193,8 @@ class Parser:
 
         command = self.__parse_command(uri)
 
-        return RCEAlert(timestamp, description, index, user,
-                        namespace, pod, container, command)
+        return ExecAlert(timestamp, description, index, user,
+                         namespace, pod, container, command)
 
     def __find_namespace(self, uri):
         hit = regsearch(r'namespaces/[\w\d_-]+', uri)

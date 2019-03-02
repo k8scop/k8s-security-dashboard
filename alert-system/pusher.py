@@ -14,7 +14,7 @@ class Pusher:
                 if self.tracker.tracking:
                     if self.tracker.parser_done:
                         self.tracker.pusher_done = True
-                        print('[x] %s Pusher is done' % self.name)
+                        print(f'[x] {self.name} Pusher is done')
                         return
 
     def __push_alert(self):
@@ -22,12 +22,11 @@ class Pusher:
 
         timestamp = alert.get_timestamp_in_dt()
 
-        index = '%s-%d.%02d.%02d' % (self.alerts, timestamp.year,
-                                     timestamp.month, timestamp.day)
+        index = f'{self.alerts}-{timestamp.year}.{timestamp.month:02d}.{timestamp.day:02d}'
 
         if not self.es.indices.exists(index=index):
             self.es.indices.create(index=index, ignore=[400, 404])
 
         self.es.index(index=index, doc_type='doc', body=alert.to_dict())
 
-        print('[++] [%s]' % (alert.description))
+        print(f'[++] [{alert.description}]')
