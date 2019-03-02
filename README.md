@@ -32,7 +32,7 @@ containers:
   - command:
     - kube-apiserver
     [arguments]
-    - --audit-policy-file=/etc/kubernetes/policies/adv-audit.yml
+    - --audit-policy-file=/etc/kubernetes/policies/adv-audit.yaml
     - --audit-log-path=/var/log/kubernetes/kube-apiserver-audit.log
     - --audit-log-format=json
     [arguments]
@@ -53,7 +53,7 @@ containers:
   name: var-log-kubernetes
 ```
 
-An example configuration file can be found in `configs/kubernetes/kube-apiserver.yaml`.
+An example configuration file can be found in `configs/kubernetes/kube-apiserver.yaml`. Create the `policies` directory in `/etc/kubernetes` and copy `configs/kubernetes/adv-audit.yaml` to the newly created directory.
 
 ### Setting up Elasticsearch and Kibana
 
