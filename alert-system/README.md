@@ -15,7 +15,6 @@ $ ./app.py -h
 usage: app.py [-h] --elastic ES --pages PAGES --alerts ALERTS --start START
               --analysis {static,streaming} [--end END]
               [--fetch-delay {3,5,8,10,12}]
-
 ```
 
 - `-E`: the `ip:port` of the ElasticSearch instance
@@ -59,8 +58,7 @@ $ ./app.py -E 172.16.137.133:9200 -I logstash -i alerts -s 2019-2-1-0-0-0
 
 ```
 $ ./app.py -E 172.16.137.133:9200 -I logstash -i alerts -s 2019-2-1-0-0-0 
-           --analysis streaming
-              
+           --analysis streaming   
 ```
 
 ### Important
@@ -76,4 +74,4 @@ Time must be given in UTC format.
 - Create an interface for adding new rules
 - Correlate multiple events to detect more complex attacks
 - Integrate triggers
-- Connect K8sCop to Kubernetes itself?
+- Make K8sCop interact with Kubernetes itself
