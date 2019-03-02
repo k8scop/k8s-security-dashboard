@@ -3,167 +3,119 @@
 <!-- vim-markdown-toc GFM -->
 
 * [Installation](#installation)
-* [Joining our cluster](#joining-our-cluster)
-    * [Fluentd](#fluentd)
+* [kube-apiserver arguments](#kube-apiserver-arguments)
+    * [Deploying fluent](#deploying-fluent)
         * [Preparation](#preparation)
-            * [Ulimit](#ulimit)
-            * [Kernel parameter optimization](#kernel-parameter-optimization)
-        * [Installation](#installation-1)
+    * [Debugging](#debugging)
+* [Mapping kubectl commands API endpoints](#mapping-kubectl-commands-api-endpoints)
 
 <!-- vim-markdown-toc -->
 
 ## Installation
 
-## Joining our cluster
+## kube-apiserver arguments
+
+The `kube-apiserver` has the possiblity to keep and store audit logs. By adding the following arguments to the `/etc/kubernetes/manifests/kube-apiserver.yaml` file:
 
 ```bash
-$ kubeadm join 192.168.57.4:6443 --token peraiv.rdak5meh6lklbof2 --discovery-token-ca-cert-hash sha256:44f06aa4ce1ec31691368b206c86955692738746de826ce9b96cb77cb0caadbb
+containers:
+  - command:
+    - kube-apiserver
+    [arguments]
+    - --audit-policy-file=/etc/kubernetes/policies/adv-audit.yml
+    - --audit-log-path=/var/log/kubernetes/kube-apiserver-audit.log
+    - --audit-log-format=json
+    [arguments]
+  volumeMounts:
+   [options]
+    - mountPath: /etc/kubernetes/policies
+      name: policies
+      readOnly: true
+    - mountPath: /var/log/kubernetes
+[options]
+ - hostPath:
+   path: /etc/kubernetes/policies
+   type: DirectoryOrCreate
+  name: policies
+- hostPath:
+   path: /var/log/kubernetes
+   type: DirectoryOrCreate
+  name: var-log-kubernetes
 ```
 
+An example configuration file can be found in `configs/kubernetes/kube-apiserver.yaml`.
 
-### Fluentd
-For Debian based distros the required APT repository files can be found (here)[https://docs.fluentd.org/v1.0/articles/install-by-deb]. For other distributions, files and a guide can be found (here)[https://docs.fluentd.org/v1.0/articles/quickstart].
+### Deploying fluent
 
 #### Preparation
 
-##### Ulimit
-Check if the `ulimit` is sufficient. Is the output similar to the output below?
+Create the mount directory for the fluent configuration:
 
-```zsh
-$ ulimit -n
-1024
+```bash
+# mkdir -p /var/share/volumes/fluent/etc
 ```
 
-Then add the following lines to `/etc/security/limits.d/fluentd.conf`:
+Add the files from the `configs/fluent` folder:
 
-```config
-root soft nofile 65536
-root hard nofile 65536
-* soft nofile 65536
-* hard nofile 65536
-```
-
-To apply the changes, reboot the computer.
-
-##### Kernel parameter optimization
-For high load environments, having loads of Fluentd instances, it is recommended to apply the following settings:
-
-```sysctl
-net.core.somaxconn = 1024
-net.core.netdev_max_backlog = 5000
-net.core.rmem_max = 16777216
-net.core.wmem_max = 16777216
-net.ipv4.tcp_wmem = 4096 12582912 16777216
-net.ipv4.tcp_rmem = 4096 12582912 16777216
-net.ipv4.tcp_max_syn_backlog = 8096
-net.ipv4.tcp_slow_start_after_idle = 0
-net.ipv4.tcp_tw_reuse = 1
-net.ipv4.ip_local_port_range = 10240 65535
-```
-
-Add this to `/etc/sysctl.conf`. Reboot or type `sysctl -p` to apply the changes.
-
-
-#### Installation
-
-```
-kind: Namespace
-apiVersion: v1
-metadata:
-  name: kube-logging
+```bash
+# cp entrypoint.sh Gemfile /var/share/volumes/fluent/.
+# cp fluent.conf /var/share/volumes/fluent/etc/.
 ```
 
 
-```
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: fluentd
-  namespace: kube-logging
-  labels:
-    app: fluentd
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: fluentd
-  labels:
-    app: fluentd
-rules:
-- apiGroups:
-  - ""
-  resources:
-  - pods
-  - namespaces
-  verbs:
-  - get
-  - list
-  - watch
----
-kind: ClusterRoleBinding
-apiVersion: rbac.authorization.k8s.io/v1
-metadata:
-  name: fluentd
-roleRef:
-  kind: ClusterRole
-  name: fluentd
-  apiGroup: rbac.authorization.k8s.io
-subjects:
-- kind: ServiceAccount
-  name: fluentd
-  namespace: kube-logging
----
-apiVersion: apps/v1
-kind: DaemonSet
-metadata:
-  name: fluentd
-  namespace: kube-logging
-  labels:
-    app: fluentd
-spec:
-  selector:
-    matchLabels:
-      app: fluentd
-  template:
-    metadata:
-      labels:
-        app: fluentd
-    spec:
-      serviceAccount: fluentd
-      serviceAccountName: fluentd
-      tolerations:
-      - key: node-role.kubernetes.io/master
-        effect: NoSchedule
-      containers:
-      - name: fluentd
-        image: fluent/fluentd-kubernetes-daemonset:v0.12-debian-elasticsearch
+Change the environment variables to connect to the installed elasticsearch installation:
+
+```yaml
+     - name: fluentd
+        image: fluent/fluentd-kubernetes-daemonset:v1.1-debian-elasticsearch
         env:
           - name:  FLUENT_ELASTICSEARCH_HOST
-            value: "192.168.57.4"
+            value: "192.168.178.65"
           - name:  FLUENT_ELASTICSEARCH_PORT
             value: "9200"
           - name: FLUENT_ELASTICSEARCH_SCHEME
             value: "http"
           - name: FLUENT_UID
             value: "0"
+          - name: FLUENT_ELASTICSEARCH_USER # even if not used they are necessary
+            value: "foo"
+          - name: FLUENT_ELASTICSEARCH_PASSWORD # even if not used they are necessary
+            value: "bar"
         resources:
-          limits:
-            memory: 512Mi
-          requests:
-            cpu: 100m
-            memory: 200Mi
-        volumeMounts:
-        - name: varlog
-          mountPath: /var/log
-        - name: varlibdockercontainers
-          mountPath: /var/lib/docker/containers
-          readOnly: true
-      terminationGracePeriodSeconds: 30
-      volumes:
-      - name: varlog
-        hostPath:
-          path: /var/log
-      - name: varlibdockercontainers
-        hostPath:
-          path: /var/lib/docker/containers
 ```
+
+Apply the yaml configuration file:
+
+```bash
+$ kubectl apply -f fluentd-setup.yml
+```
+
+There should be a `kube-logging` namespace, containing a volume(claim), a fluent pod and service account.
+
+### Debugging 
+
+To check the progress or to debug error messages, run the following command:
+
+```bash
+$ kubectl --namespace kube-logging logs fluent-[identifier] init-fluentd -f
+```
+
+This will stream the init containers' stdout/stderr while installing the required gems.
+Omit `init-fluentd` to stream the logs of the actual container.
+
+
+## Mapping kubectl commands API endpoints
+
+|API|kubectl|comment|
+|---|-------|-------|
+|/api/v1/pods|get pods --all-namespaces||
+|/api/v1/namespaces/kube-system/pods|get pods --namespace kube-system||
+|/api/v1/namespaces/default/pods/busybox-test|describe busybox-test --namespace default||
+|/api/v1/namespaces/default/pods/unsafe-space|describe pods unsafe-space --namespace default||
+|/api/v1/pods?includeUninitialized=true|describe pods --all-namespaces||
+|/api/v1/namespaces/default/secrets?includeUninitialized=true| Followed by multiple token queries|
+|/api/v1/namespaces/default/secrets/exec-token-qjp9l|get secret details||
+|/api/v1/namespaces/default/pods|create -f <pod>| Method create|
+|/api/v1/services?limit=500|get svc --all-namespaces||
+|/apis/extensions/v1beta1/daemonsets |get ds --all-namespaces||
+|/apis/extensions/v1beta1/namespaces/kube-system/daemonsets|get ds --namespace kube-system||

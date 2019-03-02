@@ -1,0 +1,114 @@
+[
+  {
+    "_id": "6e2bada0-3831-11e9-a558-b124872309be",
+    "_type": "dashboard",
+    "_source": {
+      "title": "Security Dashboard",
+      "hits": 0,
+      "description": "",
+      "panelsJSON": "[{\"embeddableConfig\":{},\"gridData\":{\"x\":0,\"y\":0,\"w\":24,\"h\":15,\"i\":\"1\"},\"id\":\"02642020-3831-11e9-a558-b124872309be\",\"panelIndex\":\"1\",\"type\":\"search\",\"version\":\"6.5.4\"},{\"embeddableConfig\":{\"vis\":{\"legendOpen\":true}},\"gridData\":{\"x\":24,\"y\":0,\"w\":19,\"h\":15,\"i\":\"2\"},\"id\":\"78890010-3834-11e9-a558-b124872309be\",\"panelIndex\":\"2\",\"type\":\"visualization\",\"version\":\"6.5.4\"},{\"gridData\":{\"x\":0,\"y\":15,\"w\":24,\"h\":15,\"i\":\"3\"},\"version\":\"6.5.4\",\"panelIndex\":\"3\",\"type\":\"visualization\",\"id\":\"448a1400-3836-11e9-a558-b124872309be\",\"embeddableConfig\":{}}]",
+      "optionsJSON": "{\"darkTheme\":true,\"hidePanelTitles\":false,\"useMargins\":true}",
+      "version": 1,
+      "timeRestore": false,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"query\":{\"language\":\"lucene\",\"query\":\"\"},\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "7a121ba0-3835-11e9-a558-b124872309be",
+    "_type": "search",
+    "_source": {
+      "title": "Commands per pod",
+      "description": "",
+      "hits": 0,
+      "columns": [
+        "description.title",
+        "commands",
+        "description.namespace",
+        "description.pod",
+        "description.user"
+      ],
+      "sort": [
+        "timestamp",
+        "desc"
+      ],
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"6f8e4370-2cc3-11e9-9263-bdb4e7c0f8e7\",\"highlightAll\":true,\"version\":true,\"query\":{\"query\":\"\",\"language\":\"kuery\"},\"filter\":[{\"meta\":{\"negate\":false,\"index\":\"6f8e4370-2cc3-11e9-9263-bdb4e7c0f8e7\",\"type\":\"exists\",\"key\":\"commands\",\"value\":\"exists\",\"disabled\":false,\"alias\":null},\"exists\":{\"field\":\"commands\"},\"$state\":{\"store\":\"appState\"}}]}"
+      }
+    }
+  },
+  {
+    "_id": "02642020-3831-11e9-a558-b124872309be",
+    "_type": "search",
+    "_source": {
+      "title": "Request per username",
+      "description": "",
+      "hits": 0,
+      "columns": [
+        "user.username",
+        "requestURI",
+        "userAgent",
+        "verb"
+      ],
+      "sort": [
+        "@timestamp",
+        "desc"
+      ],
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"7ef6d3f0-2ee3-11e9-8d7e-093be2e621bf\",\"highlightAll\":true,\"version\":true,\"query\":{\"language\":\"lucene\",\"query\":\"\"},\"filter\":[{\"$state\":{\"store\":\"appState\"},\"exists\":{\"field\":\"user.username\"},\"meta\":{\"alias\":null,\"disabled\":false,\"index\":\"7ef6d3f0-2ee3-11e9-8d7e-093be2e621bf\",\"key\":\"user.username\",\"negate\":false,\"type\":\"exists\",\"value\":\"exists\"}}]}"
+      }
+    }
+  },
+  {
+    "_id": "78890010-3834-11e9-a558-b124872309be",
+    "_type": "visualization",
+    "_source": {
+      "title": "Request per user",
+      "visState": "{\"title\":\"Request per user\",\"type\":\"pie\",\"params\":{\"type\":\"pie\",\"addTooltip\":true,\"addLegend\":true,\"legendPosition\":\"top\",\"isDonut\":true,\"labels\":{\"show\":true,\"values\":false,\"last_level\":false,\"truncate\":9999}},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"schema\":\"metric\",\"params\":{}},{\"id\":\"2\",\"enabled\":true,\"type\":\"terms\",\"schema\":\"segment\",\"params\":{\"field\":\"user.username.keyword\",\"size\":5,\"order\":\"desc\",\"orderBy\":\"1\",\"otherBucket\":false,\"otherBucketLabel\":\"Other\",\"missingBucket\":false,\"missingBucketLabel\":\"Missing\",\"customLabel\":\"Useraccount\"}}]}",
+      "uiStateJSON": "{\"vis\":{\"legendOpen\":true}}",
+      "description": "",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"7ef6d3f0-2ee3-11e9-8d7e-093be2e621bf\",\"query\":{\"query\":\"\",\"language\":\"kuery\"},\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "448a1400-3836-11e9-a558-b124872309be",
+    "_type": "visualization",
+    "_source": {
+      "title": "Top executed commands",
+      "visState": "{\"title\":\"Top executed commands\",\"type\":\"table\",\"params\":{\"perPage\":10,\"showPartialRows\":false,\"showMetricsAtAllLevels\":false,\"sort\":{\"columnIndex\":null,\"direction\":null},\"showTotal\":false,\"totalFunc\":\"sum\"},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"schema\":\"metric\",\"params\":{}},{\"id\":\"2\",\"enabled\":true,\"type\":\"terms\",\"schema\":\"bucket\",\"params\":{\"field\":\"commands.keyword\",\"size\":5,\"order\":\"desc\",\"orderBy\":\"1\",\"otherBucket\":false,\"otherBucketLabel\":\"Other\",\"missingBucket\":false,\"missingBucketLabel\":\"Missing\",\"customLabel\":\"Command\"}},{\"id\":\"3\",\"enabled\":true,\"type\":\"terms\",\"schema\":\"bucket\",\"params\":{\"field\":\"description.pod.keyword\",\"size\":5,\"order\":\"desc\",\"orderBy\":\"1\",\"otherBucket\":false,\"otherBucketLabel\":\"Other\",\"missingBucket\":false,\"missingBucketLabel\":\"Missing\",\"customLabel\":\"Pod\"}},{\"id\":\"4\",\"enabled\":true,\"type\":\"terms\",\"schema\":\"bucket\",\"params\":{\"field\":\"description.container.keyword\",\"size\":5,\"order\":\"desc\",\"orderBy\":\"1\",\"otherBucket\":false,\"otherBucketLabel\":\"Other\",\"missingBucket\":false,\"missingBucketLabel\":\"Missing\",\"customLabel\":\"Container\"}},{\"id\":\"5\",\"enabled\":true,\"type\":\"terms\",\"schema\":\"bucket\",\"params\":{\"field\":\"description.user.keyword\",\"size\":5,\"order\":\"desc\",\"orderBy\":\"1\",\"otherBucket\":false,\"otherBucketLabel\":\"Other\",\"missingBucket\":false,\"missingBucketLabel\":\"Missing\",\"customLabel\":\"User\"}}]}",
+      "uiStateJSON": "{\"vis\":{\"params\":{\"sort\":{\"columnIndex\":null,\"direction\":null}}}}",
+      "description": "",
+      "savedSearchId": "7a121ba0-3835-11e9-a558-b124872309be",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"query\":{\"language\":\"kuery\",\"query\":\"\"},\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "9febf780-3833-11e9-a558-b124872309be",
+    "_type": "search",
+    "_source": {
+      "title": "Usernames",
+      "description": "",
+      "hits": 0,
+      "columns": [
+        "user.username"
+      ],
+      "sort": [
+        "@timestamp",
+        "desc"
+      ],
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"7ef6d3f0-2ee3-11e9-8d7e-093be2e621bf\",\"highlightAll\":true,\"version\":true,\"query\":{\"language\":\"kuery\",\"query\":\"\"},\"filter\":[{\"meta\":{\"index\":\"7ef6d3f0-2ee3-11e9-8d7e-093be2e621bf\",\"negate\":false,\"disabled\":false,\"alias\":null,\"type\":\"exists\",\"key\":\"user.username\",\"value\":\"exists\"},\"exists\":{\"field\":\"user.username\"},\"$state\":{\"store\":\"appState\"}}]}"
+      }
+    }
+  }
+]
