@@ -1,5 +1,7 @@
 # Kubernetes Security Dashboard
 
+This guide assists in configuring a logging architecture for Kubernetes, meant to store and parse audit logs. After setting up the logging architecture, run K8sCop for static or streaming analysis, and import the security dashboard in Kibana to obtain full visibility over Kubernetes cluster activity.
+
 <!-- vim-markdown-toc GFM -->
 
 - [Kubernetes Security Dashboard](#kubernetes-security-dashboard)
@@ -69,7 +71,6 @@ Add the files from the `configs/fluent` folder:
 # cp fluent.conf /var/share/volumes/fluent/etc/.
 ```
 
-
 Change the environment variables to connect to the installed elasticsearch installation:
 
 ```yaml
@@ -114,6 +115,6 @@ Omit `init-fluentd` to stream the logs of the actual container.
 
 ## Importing the Dashboard
 
-- Navigate to your management interface of Kibana
+- Navigate to the management interface of Kibana
 - Go into Saved Objects
 - Import the json objects [file](/home/notvalery/Documents/projects/kubernetes-dashboard/configs/kibana/k8s-security-dashboard.json) 
