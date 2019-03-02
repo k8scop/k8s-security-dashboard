@@ -117,4 +117,4 @@ Omit `init-fluentd` to stream the logs of the actual container.
 
 - Navigate to the management interface of Kibana
 - Go into Saved Objects
-- Import the json objects [file](/home/notvalery/Documents/projects/kubernetes-dashboard/configs/kibana/k8s-security-dashboard.json) 
+- Import the json objects [file](configs/kibana/k8s-security-dashboard.json) 
