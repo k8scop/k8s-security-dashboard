@@ -1,19 +1,20 @@
-# Kubernetes dashboard
+# Kubernetes Security Dashboard
 
 <!-- vim-markdown-toc GFM -->
 
-* [Installation](#installation)
-* [kube-apiserver arguments](#kube-apiserver-arguments)
-    * [Deploying fluent](#deploying-fluent)
-        * [Preparation](#preparation)
-    * [Debugging](#debugging)
-* [Mapping kubectl commands API endpoints](#mapping-kubectl-commands-api-endpoints)
+- [Kubernetes Security Dashboard](#kubernetes-security-dashboard)
+  - [Installation](#installation)
+    - [kube-apiserver arguments](#kube-apiserver-arguments)
+    - [Deploying fluent](#deploying-fluent)
+      - [Preparation](#preparation)
+    - [Debugging](#debugging)
+  - [Mapping kubectl commands API endpoints](#mapping-kubectl-commands-api-endpoints)
 
 <!-- vim-markdown-toc -->
 
 ## Installation
 
-## kube-apiserver arguments
+### kube-apiserver arguments
 
 The `kube-apiserver` has the possiblity to keep and store audit logs. By adding the following arguments to the `/etc/kubernetes/manifests/kube-apiserver.yaml` file:
 
@@ -102,7 +103,6 @@ $ kubectl --namespace kube-logging logs fluent-[identifier] init-fluentd -f
 
 This will stream the init containers' stdout/stderr while installing the required gems.
 Omit `init-fluentd` to stream the logs of the actual container.
-
 
 ## Mapping kubectl commands API endpoints
 
