@@ -1,45 +1,109 @@
 #!venv/bin/python3
 
+from argparse import ArgumentParser
+from datetime import datetime, timedelta
+from elasticsearch import Elasticsearch
+from threading import Thread
+from queue import Queue
+
 from fetcher import Fetcher
 from parser import Parser
 from pusher import Pusher
+from tracker import Tracker
 
-from datetime import datetime
-from elasticsearch import Elasticsearch
-from threading import Thread
-import queue
+analysis = ''
 
 es = None
 
-page_index = ''
-alerts_index = ''
+pages = ''
+alerts = ''
 
 start = None
-fetch_delay = 0
+end = None
+
 max_alert_delta = 0
+fetch_delay = 0
+
+tracker = Tracker(False, False, False, False)
 
 
-def init_globals():
+def parse_arguments():
+    parser = ArgumentParser(description='K8sCop Alert System')
+
+    required = parser.add_argument_group('required arguments')
+    optional = parser.add_argument_group('optional arguments')
+
+    required.add_argument('--elastic', '-E', dest='es', type=str,
+                          help='ElasticSearch instance ip:port', required=True)
+
+    required.add_argument('--pages', '-I', dest='pages', type=str,
+                          help='Name of the logs pages', required=True)
+
+    required.add_argument('--alerts', '-i', dest='alerts', type=str,
+                          help='Name of the alerts pages', default='alerts',
+                          required=True)
+
+    required.add_argument('--start', '-s', dest='start', type=str,
+                          help='Start date and time yyyy-m-d-h-m-s',
+                          required=True)
+
+    required.add_argument('--max-alert-delta', '-D', dest='max_alert_delta',
+                          type=int,
+                          help='Max delta for alert aggregation in seconds',
+                          required=True)
+
+    required.add_argument('--analysis', '-A', dest='analysis', type=str,
+                          choices=['static', 'streaming'],
+                          help='K8sCop static or streaming analysis',
+                          required=True)
+
+    optional.add_argument('--end', '-e', dest='end', type=str,
+                          default='now',
+                          help='End date and time yyyy-m-d-h-s or now')
+
+    optional.add_argument('--fetch-delay', '-d', dest='fetch_delay', type=int,
+                          choices=[5, 10, 12], default=10,
+                          help='Delay between log fetches in seconds')
+
+    return parser.parse_args()
+
+
+def init_globals(args):
+    global analysis
     global es
-    global page_index
-    global alerts_index
+    global pages
+    global alerts
     global start
-    global fetch_delay
+    global end
     global max_alert_delta
+    global fetch_delay
+    global tracker
 
-    es = Elasticsearch([{'host': 'localhost', 'port': 9200}])
+    analysis = args.analysis
 
-    page_index = 'filebeat-6.5.4-2019.02.09'
-    alerts_index = 'alerts'
+    es_string = args.es.split(':')
+    es = Elasticsearch([{'host': es_string[0], 'port': int(es_string[1])}])
 
-    start = datetime(2019, 2, 9, 0, 0, 0)
+    pages = args.pages
+    alerts = args.alerts
 
-    fetch_delay = 10
-    max_alert_delta = 600
+    s = list(map(int, args.start.split('-')))
+    start = datetime(s[0], s[1], s[2], s[3], s[4], s[5])
 
-    # For Testing Purposes
-    es.indices.delete(index=alerts_index, ignore=[400, 404])
-    es.indices.create(index=alerts_index)
+    if analysis == 'static':
+        tracker.set_tracking()
+
+        e_string = args.end
+        if e_string == 'now':
+            end = datetime.utcnow()
+        else:
+            e = list(map(int, e_string.split('-')))
+            end = datetime(e[0], e[1], e[2], e[3], e[4], e[5])
+    else:
+        end = datetime.utcnow() - timedelta(seconds=fetch_delay)
+        fetch_delay = args.fetch_delay
+
+    max_alert_delta = args.max_alert_delta
 
 
 def run_processes(steve_jobs):
@@ -51,35 +115,53 @@ def run_processes(steve_jobs):
         job.join()
 
 
-# ./app.py
-# -E localhost:9200
-# -I filebeat-6.5.4-2019.02.08
-# -i alerts
-# -s 2019-2-9-10-0-0
-# -d 10
-# -m 600
 if __name__ == '__main__':
-    init_globals()
+    args = parse_arguments()
+    init_globals(args)
 
-    fetch_queue = queue.Queue()
-    push_queue = queue.Queue()
-
-    running = True
-
-    # then = datetime.now() - timedelta(seconds=fetch_delay)
-    then = datetime(2019, 2, 9, 18, 0, 0)
-
-    fetcher = Fetcher(es, page_index, fetch_delay, fetch_queue, running)
-    parser = Parser(fetch_queue, push_queue, running)
-    pusher = Pusher(es, alerts_index, max_alert_delta, push_queue, running)
-
-    res = fetcher.fetch(start, then)
-    fetcher.add_to_fetch_queue(res)
+    print('[*] Starting K8sCop in %s mode' % analysis)
+    print('[+] Connected to ElasticSearch')
 
     try:
-        fetcher_t = Thread(target=fetcher.fetch_update, args=(then,))
-        parser_t = Thread(target=parser.parse)
-        pusher_t = Thread(target=pusher.push_alerts)
-        run_processes([fetcher_t, parser_t, pusher_t])
+        fetch_queue = Queue()
+
+        push_queue_dict = {}
+        push_queue_dict['Enum'] = Queue()
+        push_queue_dict['Integrity'] = Queue()
+        push_queue_dict['Secrets'] = Queue()
+        push_queue_dict['RCE'] = Queue()
+
+        print('[*] Initialising fetcher, parser, pusher components')
+        fetcher = Fetcher(es, pages, fetch_delay, fetch_queue, tracker)
+        parser = Parser(fetch_queue, push_queue_dict, tracker)
+
+        pusher_enu = Pusher('Enum', es, alerts, max_alert_delta,
+                            push_queue_dict['Enum'], tracker)
+        pusher_int = Pusher('Integrity', es, alerts, max_alert_delta,
+                            push_queue_dict['Integrity'], tracker)
+        pusher_sec = Pusher('Secrets', es, alerts, max_alert_delta,
+                            push_queue_dict['Secrets'], tracker)
+        pusher_rce = Pusher('RCE', es, alerts, max_alert_delta,
+                            push_queue_dict['RCE'], tracker)
+        print('[+] Components initialised')
+    except Exception as e:
+        print('[!] Something went terribly wrong')
+        print('[-] %s' % e)
+        exit(0)
+
+    fetcher_t = Thread(target=fetcher.fetch, args=(start, end))
+
+    parser_t = Thread(target=parser.parse)
+
+    pusher_t1 = Thread(target=pusher_enu.push)
+    pusher_t2 = Thread(target=pusher_int.push)
+    pusher_t3 = Thread(target=pusher_sec.push)
+    pusher_t4 = Thread(target=pusher_rce.push)
+
+    try:
+        print('[*] Launching threads')
+        run_processes([fetcher_t, parser_t, pusher_t1, pusher_t2,
+                       pusher_t3, pusher_t4])
+        print('[x] K8sCop is done')
     except KeyboardInterrupt:
-        running = False
+        print('[!] K8sCop force quit')

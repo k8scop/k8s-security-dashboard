@@ -1,47 +1,48 @@
-from alert import Alert
+from time import sleep
 
-from datetime import datetime, timedelta
-import time
+from alert import Alert
 
 
 class Pusher:
-    def __init__(self, es, alerts_index, max_delta, push_queue, running):
+    def __init__(self, name, es, alerts, max_delta, push_queue, tracker):
+        self.name = name
         self.es = es
-        self.alerts_index = alerts_index
+        self.alerts = alerts
         self.max_delta = max_delta
         self.push_queue = push_queue
-        self.running = running
+        self.tracker = tracker
 
-    def push_alerts(self):
-        while self.running:
+    def push(self):
+        while True:
             if self.push_queue.qsize() > 0:
-                element, title = self.push_queue.get()
+                self.__push_alert()
+            else:
+                if self.tracker.tracking:
+                    if self.tracker.parser_done:
+                        self.tracker.pusher_done = True
+                        print('[x] %s Pusher is done' % self.name)
+                        return
 
-                index = element['_id']
-                timestamp = element['_source']['@timestamp']
+    def __push_alert(self):
+        alert = self.push_queue.get()
 
-                gte = self.__get_gte(timestamp)
+        timestamp = alert.get_timestamp_in_dt()
+        least_time = alert.get_max_delta(self.max_delta)
 
-                a = self.__search_alert(title, gte, timestamp)
+        old_alert_dict = self.__search_alert(alert.a_type, alert.description,
+                                             least_time, alert.timestamp)
 
-                if a is None:
-                    self.__push_new_alert(title, index, timestamp)
-                else:
-                    self.__update_alert(a, index, timestamp)
+        self.__push_or_update(timestamp, old_alert_dict, alert)
 
-                time.sleep(1)
+    def __search_alert(self, a_type, description, gte, lte):
+        index = '%s-%d.%02d.%02d' % (self.alerts, gte.year, gte.month, gte.day)
 
-    def __get_gte(self, timestamp):
-        datetime_t = datetime.strptime(timestamp, '%Y-%m-%dT%H:%M:%S.%fZ')
-        return datetime_t - timedelta(seconds=self.max_delta)
-
-    def __search_alert(self, title, gte, lte):
         jason = {
             'query': {
                 'bool': {
                     'must': {
                         'match': {
-                            'title': title
+                            'a_type': a_type
                         }
                     },
                     'filter': {
@@ -56,30 +57,57 @@ class Pusher:
             }
         }
 
-        res = self.es.search(index=self.alerts_index, body=jason)
+        old_alert_dict = None
 
-        a = None
-        for hit in res['hits']['hits']:
-            a = hit
+        if self.es.indices.exists(index=index):
+            res = self.es.search(index=index, body=jason)
 
-        return a
+            for hit in res['hits']['hits']:
+                if hit['_source']['description'] == description:
+                    old_alert_dict = hit
+                    break
 
-    def __push_new_alert(self, title, index, timestamp):
-        alert = Alert(timestamp, title, [index], 1, timestamp)
+        return old_alert_dict
 
-        self.es.index(index=self.alerts_index, doc_type='doc',
-                      body=alert.to_dict())
+    def __push_or_update(self, timestamp, old_alert_dict, alert):
+        if old_alert_dict is None:
+            index = '%s-%d.%02d.%02d' % (self.alerts, timestamp.year,
+                                         timestamp.month, timestamp.day)
 
-        print('added %s' % title)
+            self.__push_new_alert(index, alert)
+        else:
+            old_alert = Alert.from_dict(old_alert_dict['_source'])
 
-    def __update_alert(self, a, index, timestamp):
-        _id = a['_id']
+            old_timestamp = old_alert.get_timestamp_in_dt()
 
-        a = Alert.from_dict(a['_source'])
+            if old_timestamp.date() != timestamp.date():
+                index = '%s-%d.%02d.%02d' % (self.alerts,
+                                             old_timestamp.year,
+                                             old_timestamp.month,
+                                             old_timestamp.day)
+            else:
+                index = '%s-%d.%02d.%02d' % (self.alerts, timestamp.year,
+                                             timestamp.month, timestamp.day)
 
-        a.update(index, timestamp)
+            self.__update_alert(index, old_alert_dict['_id'], old_alert, alert)
 
-        self.es.update(index=self.alerts_index, doc_type='doc', id=_id, 
-                       body={'doc': a.to_dict()})
+    def __push_new_alert(self, index, alert):
+        if not self.es.indices.exists(index=index):
+            self.es.indices.create(index=index, ignore=[400, 404])
 
-        print('updated %s' % a.title)
+        res = self.es.index(index=index, doc_type='doc',
+                            body=alert.to_dict())
+
+        print('[++] [%s] %s' % (alert.description, res['_id']))
+
+        sleep(3)
+
+    def __update_alert(self, index, _id, old_alert, new_alert):
+        old_alert.merge(new_alert)
+
+        self.es.update(index=index, doc_type='doc', id=_id,
+                       body={'doc': old_alert.to_dict()})
+
+        print('[+=] Updated alert %s' % _id)
+
+        sleep(1)
