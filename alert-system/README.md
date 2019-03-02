@@ -23,11 +23,10 @@ usage: app.py [-h] --elastic ES --pages PAGES --alerts ALERTS --start START
 - `-s`: the desired start date and time of the analysis
 - `-A`: set the analysis to static or streaming
 
-If the analysis is static, the end date and time of the analysis must be set:
+If the analysis is static, the end date and time of the analysis must be set. 
+If the end date and time is not given, the end date and time is automatically set to _utcnow_:
 
 - `-e`: the end date and time of the **static** analysis [optional]
-
-If the end date and time is not given, the end date and time is automatically set to _utcnow_. 
 
 If the analysis is streaming, a delay between log fetches must be set, because of potential Elasticsearch latency:
 
@@ -35,7 +34,7 @@ If the analysis is streaming, a delay between log fetches must be set, because o
 
 ## Elasticsearch Indices
 
-In our current logging architecture, logs get stored into Elasticsearch under an index with prefix _logstash_ and the date of the log prepended, like `logstash-2019.03.02`. 
+In our current logging architecture, logs get stored into Elasticsearch under an index with prefix _logstash_ and the date of the log prepended, for example `logstash-2019.03.02`. 
 K8sCop receives the prefix of the logs page as parameter and does the appending of the date on its own. 
 
 For storing the alert, K8sCop receives the desired prefix for the alerts page and does the appending of the date by looking at the timestamp of the alert. 
