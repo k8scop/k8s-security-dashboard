@@ -1,14 +1,15 @@
 # Kubernetes Security Dashboard
+This guide aids in configuring a logging architecture for Kubernetes, meant to store and parse audit logs. After setting up the logging architecture, run k8scop for static analysis, and import the security dashboard in Kibana.
+
 
 <!-- vim-markdown-toc GFM -->
 
-- [Kubernetes Security Dashboard](#kubernetes-security-dashboard)
-  - [Installation](#installation)
-    - [kube-apiserver arguments](#kube-apiserver-arguments)
-    - [Deploying fluent](#deploying-fluent)
-      - [Preparation](#preparation)
-    - [Debugging](#debugging)
-  - [Mapping kubectl commands API endpoints](#mapping-kubectl-commands-api-endpoints)
+* [Installation](#installation)
+    * [kube-apiserver arguments](#kube-apiserver-arguments)
+    * [Deploying fluent](#deploying-fluent)
+        * [Preparation](#preparation)
+    * [Debugging](#debugging)
+* [Mapping kubectl commands API endpoints](#mapping-kubectl-commands-api-endpoints)
 
 <!-- vim-markdown-toc -->
 
