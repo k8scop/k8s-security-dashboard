@@ -26,7 +26,25 @@ containers:
     - --audit-log-path=/var/log/kubernetes/kube-apiserver-audit.log
     - --audit-log-format=json
     [arguments]
+  volumeMounts:
+   [options]
+    - mountPath: /etc/kubernetes/policies
+      name: policies
+      readOnly: true
+    - mountPath: /var/log/kubernetes
+      name: var-log-kubernetes
+   [options]
+ - hostPath:
+   path: /etc/kubernetes/policies
+   type: DirectoryOrCreate
+  name: policies
+- hostPath:
+   path: /var/log/kubernetes
+   type: DirectoryOrCreate
+  name: var-log-kubernetes
 ```
+
+An example configuration file can be found in `configs/kubernetes/kube-apiserver.yaml`.
 
 ### Deploying fluent
 
@@ -97,6 +115,7 @@ Omit `init-fluentd` to stream the logs of the actual container.
 |/api/v1/namespaces/default/pods/unsafe-space|describe pods unsafe-space --namespace default||
 |/api/v1/pods?includeUninitialized=true|describe pods --all-namespaces||
 |/api/v1/namespaces/default/secrets?includeUninitialized=true| Followed by multiple token queries|
+|/api/v1/namespaces/default/secrets/exec-token-qjp9l|get secret details||
 |/api/v1/namespaces/default/pods|create -f <pod>| Method create|
 |/api/v1/services?limit=500|get svc --all-namespaces||
 |/apis/extensions/v1beta1/daemonsets |get ds --all-namespaces||
