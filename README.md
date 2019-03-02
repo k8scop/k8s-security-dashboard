@@ -5,6 +5,7 @@ This guide assists in configuring a logging architecture for Kubernetes, meant t
 <!-- vim-markdown-toc GFM -->
 
 - [Kubernetes Security Dashboard](#kubernetes-security-dashboard)
+  - [Big Picture](#big-picture)
   - [Installation](#installation)
     - [kube-apiserver arguments](#kube-apiserver-arguments)
     - [Setting up Elasticsearch and Kibana](#setting-up-elasticsearch-and-kibana)
@@ -15,6 +16,10 @@ This guide assists in configuring a logging architecture for Kubernetes, meant t
   - [Importing the Dashboard](#importing-the-dashboard)
 
 <!-- vim-markdown-toc -->
+
+## Big Picture
+
+![](k8scop.png)
 
 ## Installation
 
