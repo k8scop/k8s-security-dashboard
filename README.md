@@ -25,7 +25,7 @@ This guide assists in configuring a logging architecture for Kubernetes, meant t
 
 - Make the `kube-apiserver` store audit logs
 - Set up Elasticsearch and Kibana outside or inside Kubernetes
-- Deploy FLuent to push logs to Elasticsearch
+- Deploy the Fluent daemon to push logs to Elasticsearch
 - Run K8sCop for static or streaming analysis of logs and labelling of events
 - Import and view the Security Dashboard in Kibana
 
