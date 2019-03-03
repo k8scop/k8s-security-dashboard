@@ -96,7 +96,7 @@ Part of this mapping is used for regex detection in the logs.
 ## Future Work
 
 - Turn K8sCop into a system daemon
-- Filter and prioritise certain alerts. 
+- Filter and prioritise certain alerts
 - Create an interface for adding new rules
 - Correlate multiple events to detect more complex attacks
 - Integrate triggers
