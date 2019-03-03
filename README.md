@@ -5,6 +5,7 @@ This guide assists in configuring a logging architecture for Kubernetes, meant t
 <!-- vim-markdown-toc GFM -->
 
 - [Kubernetes Security Dashboard](#kubernetes-security-dashboard)
+  - [TL;DR](#tldr)
   - [Big Picture](#big-picture)
   - [Installation](#installation)
     - [kube-apiserver arguments](#kube-apiserver-arguments)
@@ -13,13 +14,24 @@ This guide assists in configuring a logging architecture for Kubernetes, meant t
       - [Preparation](#preparation)
       - [Deployment](#deployment)
     - [Debugging](#debugging)
-  - [Importing the Dashboard](#importing-the-dashboard)
+  - [K8sCop](#k8scop)
+  - [Security Dashboard](#security-dashboard)
+    - [Preview](#preview)
+    - [Importing the Dashboard](#importing-the-dashboard)
 
 <!-- vim-markdown-toc -->
 
+## TL;DR
+
+- Make the `kube-apiserver` store audit logs
+- Set up Elasticsearch and Kibana outside or inside Kubernetes
+- Deploy FLuent to push logs to Elasticsearch
+- Run K8sCop for static or streaming analysis of logs and labelling of events
+- Import and view the Security Dashboard in Kibana
+
 ## Big Picture
 
-![](k8scop.png)
+![](images/diagram.png)
 
 ## Installation
 
@@ -118,7 +130,31 @@ $ kubectl --namespace kube-logging logs fluent-[identifier] init-fluentd -f
 This will stream the init containers' stdout/stderr while installing the required gems.
 Omit `init-fluentd` to stream the logs of the actual container.
 
-## Importing the Dashboard
+## K8sCop
+
+K8sCop specifics are described [here](alert-system/README.md).
+
+## Security Dashboard
+
+### Preview
+
+An overview of all requests made inside Kubernetes and a pie chart of user activity, computer by requests per user.
+
+![](images/dashboard1.png)
+
+A pie chart of the different types of alerts and an overview of the latest alerts made by K8sCop. 
+
+![](images/dashboard2.png)
+
+An overview of shell commands executed and kubectl interaction, with a list of attempts at secrets retrieval and requests that have been unauthorised. 
+
+![](images/dashboard3.png)
+
+An overview of privileged pod spawning. 
+
+![](images/dashboard4.png)
+
+### Importing the Dashboard
 
 - Navigate to the management interface of Kibana
 - Go into Saved Objects

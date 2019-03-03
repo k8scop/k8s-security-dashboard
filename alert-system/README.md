@@ -6,7 +6,7 @@ _K8sCop fetches ElasticSearch k8s logs, parses the logs to detect and label inte
 
 K8sCop is designed to make the analysis of Kubernetes audit logs easier.
 The system classifies logs into labelled events using regular expressions and provides more clarity about Kubernetes events. 
-K8sCop can perform a static analysis on a specific date range or streaming analysis in (almost) real time. It makes use of the Python Elasticsearch client and is multi-threaded for extra speed.
+K8sCop can perform a static analysis on a specific date range or streaming analysis in (almost) real time. It makes use of the Python Elasticsearch client and is multi-threaded for extra speed. K8sCop runs in **Python 2.7** because of Elasticsearch client dependencies.
 
 ## Usage
 
@@ -41,7 +41,7 @@ For storing the alert, K8sCop receives the desired prefix for the alerts page an
 
 ## Flow Diagram
 
-![](images/k8scop.png)
+![](../images/k8scop.png)
 
 The Fetcher fetches data from ElasticSearch every `d` seconds and puts each entry into the Fetch Queue. 
 The Parser gets data from the Fetch Queue, parses each entry and does regex pattern matching. 
@@ -91,11 +91,12 @@ Part of this mapping is used for regex detection in the logs.
 
 ## Sample from Kibana
 
-![](images/alerts.png)
+![](../images/alerts.png)
 
 ## Future Work
 
 - Turn K8sCop into a system daemon
+- Filter and prioritise certain alerts. 
 - Create an interface for adding new rules
 - Correlate multiple events to detect more complex attacks
 - Integrate triggers
