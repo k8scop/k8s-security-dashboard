@@ -65,11 +65,11 @@ containers:
   name: var-log-kubernetes
 ```
 
-An example configuration file can be found in `configs/kubernetes/kube-apiserver.yaml`. Create the `policies` directory in `/etc/kubernetes` and copy `configs/kubernetes/adv-audit.yaml` to the newly created directory.
+An example configuration file can be found [here](configs/kubernetes/kube-apiserver.yaml). Create the `policies` directory in `/etc/kubernetes` and copy [this yaml file](configs/kubernetes/adv-audit.yaml) to the newly created directory.
 
 ### Setting up Elasticsearch and Kibana
 
-This very nice and detailed guide on [DigitalOcean](https://www.digitalocean.com/community/tutorials/how-to-install-elasticsearch-logstash-and-kibana-elastic-stack-on-ubuntu-16-04). 
+Follow this very nice and detailed guide on [DigitalOcean](https://www.digitalocean.com/community/tutorials/how-to-install-elasticsearch-logstash-and-kibana-elastic-stack-on-ubuntu-16-04). 
 
 ### Deploying fluent
 
